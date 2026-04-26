@@ -23,7 +23,6 @@
 *.dll
 *.so.*
 
-
 # Fortran module files
 *.mod
 *.smod
@@ -41,8 +40,10 @@
 
 # Build directories
 build/
+build_xcode/
 Build/
 build-*/
+_deps/
 
 # CMake generated files
 CMakeFiles/
