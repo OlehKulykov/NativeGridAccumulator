@@ -30,7 +30,7 @@ namespace crypto {
     }
     
     template<typename T>
-    class ZeroFillAllocator final {
+    class ZeroFillAllocator {
     public:
         using value_type = T;
         
