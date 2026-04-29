@@ -30,7 +30,7 @@ namespace crypto {
     }
     
     template<typename T>
-    class ZeroFillAllocator {
+    class ZeroFillAllocator { // No 'final' - gcc bug
     public:
         using value_type = T;
         

@@ -8,6 +8,7 @@
  */
 
 #include <limits>
+#include <cstring>
 
 #include "nga_kraken_types.hpp"
 
