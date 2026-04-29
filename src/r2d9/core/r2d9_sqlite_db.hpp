@@ -21,11 +21,11 @@ namespace r2d9 {
     
     class SQLiteDB {
     protected:
-        struct DBDeleter {
+        struct DBDeleter final {
             void operator()(struct sqlite3 * R2D9_NULLABLE db) const noexcept;
         };
         
-        struct StmtDeleter {
+        struct StmtDeleter final {
             void operator()(struct sqlite3_stmt * R2D9_NULLABLE stmt) const noexcept;
         };
         

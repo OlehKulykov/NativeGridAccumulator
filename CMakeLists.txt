@@ -246,11 +246,11 @@ endif()
 
 # Boost
 if (NOT OPT_WITH_SYSTEM_BOOST)
-  set(BOOST_INCLUDE_LIBRARIES algorithm variant)
+  set(BOOST_INCLUDE_LIBRARIES asio beast decimal)
   set(BOOST_ENABLE_CMAKE ON)
   FetchContent_Declare(Boost
     GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG        ef7fea34711a189472893b88205b1dd3c275677b # Release:  boost-1.91.0-1
+    GIT_TAG        1a80576db6b70828803819fb6925132193bc5d0e # Release:  boost-1.91.0
     SYSTEM
     OVERRIDE_FIND_PACKAGE
   )
@@ -261,7 +261,7 @@ if (NOT OPT_WITH_SYSTEM_BOOST)
   message("-- Found Boost include: ${BOOST_INCLUDE_LIBRARIES}")
   FetchContent_MakeAvailable(Boost)
 endif()
-find_package(Boost 1.91.0 EXACT REQUIRED COMPONENTS algorithm variant)
+find_package(Boost 1.91.0 EXACT REQUIRED COMPONENTS asio beast decimal)
 
 # RapidJSON
 FetchContent_Declare(RapidJSON
@@ -346,7 +346,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # ---- Sources & headers ----
 set(R2D9_HEADERS
   src/r2d9/core/r2d9_c_string.h
-  src/r2d9/core/r2d9_curl_request.hpp
   src/r2d9/core/r2d9_data.hpp
   src/r2d9/core/r2d9_file_utils.hpp
   src/r2d9/core/r2d9_fixed_string_stream.hpp
@@ -365,27 +364,42 @@ set(R2D9_HEADERS
   src/r2d9/core/r2d9_trio.hpp
   src/r2d9/core/r2d9_utils.hpp
   src/r2d9/core/r2d9_dispatch_queue.hpp
+  src/r2d9/core/r2d9_crypto.hpp
   src/r2d9/r2d9.h
   src/r2d9/r2d9.hpp
 )
 
 set(R2D9_SOURCES
   src/r2d9/core/r2d9_c_string.c
-  src/r2d9/core/r2d9_curl_request.cpp
   src/r2d9/core/r2d9_file_utils.cpp
   src/r2d9/core/r2d9_http.cpp
   src/r2d9/core/r2d9_logger.cpp
   src/r2d9/core/r2d9_randomizer.cpp
   src/r2d9/core/r2d9_sqlite_db.cpp
   src/r2d9/core/r2d9_dispatch_queue.cpp
+  src/r2d9/core/r2d9_crypto.cpp
 )
 
-set(NGA_HEADERS
-  
+set(NGA_COMMON_HEADERS
+  src/nga_curl_request.hpp
+  src/nga_kraken_api_base.hpp
+  src/nga_kraken_decimal_utils.hpp
+  src/nga_kraken_orders_db.hpp
+  src/nga_types.hpp
+  src/nga_kraken_db_order.hpp
+  src/nga_kraken_order.hpp
+  src/nga_kraken_types.hpp
+  src/nga_kraken_api.hpp
 )
 
-set(NGA_SOURCES
-  
+set(NGA_COMMON_SOURCES
+  src/nga_curl_request.cpp
+  src/nga_kraken_db_order.cpp
+  src/nga_kraken_orders_db.cpp
+  src/nga_kraken_api_base.cpp
+  src/nga_kraken_order.cpp
+  src/nga_kraken_types.cpp
+  src/nga_kraken_api.cpp
 )
 
 # ---- Groups ----
@@ -393,8 +407,6 @@ source_group("r2d9"
   FILES
   src/r2d9/core/r2d9_c_string.c
   src/r2d9/core/r2d9_c_string.h
-  src/r2d9/core/r2d9_curl_request.cpp
-  src/r2d9/core/r2d9_curl_request.hpp
   src/r2d9/core/r2d9_data.hpp
   src/r2d9/core/r2d9_file_utils.cpp
   src/r2d9/core/r2d9_file_utils.hpp
@@ -419,6 +431,8 @@ source_group("r2d9"
   src/r2d9/core/r2d9_utils.hpp
   src/r2d9/core/r2d9_dispatch_queue.hpp
   src/r2d9/core/r2d9_dispatch_queue.cpp
+  src/r2d9/core/r2d9_crypto.cpp
+  src/r2d9/core/r2d9_crypto.hpp
   src/r2d9/r2d9.h
   src/r2d9/r2d9.hpp
 )
@@ -428,18 +442,41 @@ source_group("daemon"
   src/nga_daemon.cpp
 )
 
+source_group("common"
+  FILES
+  src/nga_curl_request.cpp
+  src/nga_curl_request.hpp
+  src/nga_kraken_api.cpp
+  src/nga_kraken_api.hpp
+  src/nga_kraken_api_base.hpp
+  src/nga_kraken_decimal_utils.hpp
+  src/nga_kraken_orders_db.hpp
+  src/nga_types.hpp
+  src/nga_kraken_db_order.hpp
+  src/nga_kraken_order.hpp
+  src/nga_kraken_types.hpp
+  src/nga_kraken_db_order.cpp
+  src/nga_kraken_orders_db.cpp
+  src/nga_kraken_api_base.cpp
+  src/nga_kraken_order.cpp
+  src/nga_kraken_types.cpp
+)
+
 # ------ Binaries, Link (in Park) ---------
 add_executable(${NGA_DAEMON_NAME}
   "src/nga_daemon.cpp"
   ${R2D9_HEADERS} ${R2D9_SOURCES}
-  ${NGA_HEADERS} ${NGA_SOURCES}
+  ${NGA_COMMON_HEADERS} ${NGA_COMMON_SOURCES}
 )
 
 target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
   PRIVATE "${CURL_INCLUDE_DIRS}"
   PRIVATE "${RapidJSON_INCLUDE_DIR}"
   PRIVATE SQLite::SQLite3
-  PRIVATE Boost::algorithm
+  PRIVATE OpenSSL::Crypto
+  PRIVATE Boost::asio
+  PRIVATE Boost::beast
+  PRIVATE Boost::decimal
 )
 
 target_link_libraries(${NGA_DAEMON_NAME}
@@ -447,7 +484,9 @@ target_link_libraries(${NGA_DAEMON_NAME}
   PRIVATE Threads::Threads
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
-  PRIVATE Boost::algorithm
+  PRIVATE Boost::asio
+  PRIVATE Boost::beast
+  PRIVATE Boost::decimal
 )
 
 if(APPLE)

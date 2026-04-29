@@ -50,6 +50,7 @@ namespace http {
     
     R2D9_CPP_API_PRIVATE(const char * R2D9_NULLABLE) contentEncodingToString(const ContentEncoding contentEncoding) noexcept;
     
+    R2D9_CPP_API_PRIVATE(const char * R2D9_NONNULL const) headerAccept;
     R2D9_CPP_API_PRIVATE(const char * R2D9_NONNULL const) headerAcceptCharset;
     R2D9_CPP_API_PRIVATE(const char * R2D9_NONNULL const) headerAcceptLanguage;
     R2D9_CPP_API_PRIVATE(const char * R2D9_NONNULL const) headerAuthorization;
@@ -63,18 +64,18 @@ namespace http {
     R2D9_CPP_API_PRIVATE(const char * R2D9_NONNULL const) headerLocation;
     
     enum class Header : uint8_t {
-        None            = 0,
-        AcceptCharset   = 1,
-        AcceptLanguage  = 2,
-        Authorization   = 3,
-        Date            = 4,
-        ETag            = 5,
-        Expires         = 6,
-        UserAgent       = 7,
-        Location        = 8,
-        ContentEncoding = 9,
-        ContentType     = 10,
-        ContentLength   = 11
+        Accept          = 1,
+        AcceptCharset   = 2,
+        AcceptLanguage  = 3,
+        Authorization   = 4,
+        Date            = 5,
+        ETag            = 6,
+        Expires         = 7,
+        UserAgent       = 8,
+        Location        = 9,
+        ContentEncoding = 10,
+        ContentType     = 11,
+        ContentLength   = 12
     };
     
     R2D9_CPP_API_PRIVATE(const char * R2D9_NULLABLE) headerToString(const Header header) noexcept;

@@ -21,7 +21,11 @@
 #include "ngad-config.pch"
 #endif
 
+#include "nga_kraken_orders_db.hpp"
+#include "nga_kraken_api.hpp"
+
 int main(int argc, const char * argv[]) {
+    using namespace nga::kraken;
     
     return EXIT_SUCCESS;
 }

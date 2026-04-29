@@ -51,6 +51,7 @@ namespace http {
         return nullptr;
     }
     
+    const char * R2D9_NONNULL const headerAccept            = "Accept";
     const char * R2D9_NONNULL const headerAcceptCharset     = "Accept-Charset";
     const char * R2D9_NONNULL const headerAcceptLanguage    = "Accept-Language";
     const char * R2D9_NONNULL const headerAuthorization     = "Authorization";
@@ -69,7 +70,8 @@ namespace http {
         Header h;
     };
     
-    static const TmpHeaderInfo headerInfos[11] = {
+    static const TmpHeaderInfo headerInfos[12] = {
+        { headerAccept, Header::Accept },
         { headerAcceptCharset, Header::AcceptCharset },
         { headerAcceptLanguage, Header::AcceptLanguage },
         { headerAuthorization, Header::Authorization },
@@ -84,7 +86,7 @@ namespace http {
     };
     
     const char * R2D9_NULLABLE headerToString(const Header header) noexcept {
-        for (size_t i = 0; i < 11; i++) {
+        for (size_t i = 0; i < 12; i++) {
             if (header == headerInfos[i].h) {
                 return headerInfos[i].s;
             }
@@ -94,13 +96,13 @@ namespace http {
     
     Header headerFromString(const char * R2D9_NULLABLE s) noexcept {
         if (s) {
-            for (size_t i = 0; i < 11; i++) {
+            for (size_t i = 0; i < 12; i++) {
                 if (::strcasecmp(s, headerInfos[i].s) == 0) {
                     return headerInfos[i].h;
                 }
             }
         }
-        return Header::None;
+        return Header{0};
     }
 
 } // namespace http

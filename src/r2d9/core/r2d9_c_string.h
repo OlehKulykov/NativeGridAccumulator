@@ -20,5 +20,6 @@ R2D9_C_API_PRIVATE(char * R2D9_NULLABLE) r2d9_c_str_copy_non_empty(const char * 
 R2D9_C_API_PRIVATE(char * R2D9_NULLABLE) r2d9_c_str_copy_with_empty(const char * R2D9_NULLABLE cString);
 R2D9_C_API_PRIVATE(char * R2D9_NULLABLE) r2d9_c_str_init_len(const size_t len);
 R2D9_C_API_PRIVATE(void) r2d9_c_str_release(char * R2D9_NULLABLE cString);
+R2D9_C_API_PRIVATE(void) r2d9_c_str_release_zero_fill(char * R2D9_NULLABLE cString);
 
 #endif //!__R2D9_C_STRING_H__
