@@ -12,6 +12,7 @@
 
 #include <chrono>
 #include <stdexcept>
+#include <ostream>
 #include <cstdio>
 #include <climits>
 #include <cstring>
@@ -81,7 +82,7 @@ namespace r2d9 {
         
         void clear(const bool withZeros = false) noexcept {
             if (withZeros) {
-                ::memset(static_cast<void *>(_buffer), 0, MAX_LENGTH + 1);
+                ::memset(static_cast<char *>(_buffer), 0, MAX_LENGTH + 1);
             } else {
                 _buffer[0] = 0;
             }
@@ -214,6 +215,17 @@ namespace r2d9 {
         
         FixedStringStream & operator << (bool v) {
             return v ? append("true", 4) : append("false", 5);
+        }
+        
+        template<size_t T, bool U>
+        friend FixedStringStream<T, U> & operator << (FixedStringStream<T, U> & os, const FixedStringStream & fs) {
+            os << static_cast<const char *>(fs);
+            return os;
+        }
+        
+        friend std::ostream & operator << (std::ostream & os, const FixedStringStream & fs) {
+            os << static_cast<const char *>(fs);
+            return os;
         }
         
         FixedStringStream() noexcept {

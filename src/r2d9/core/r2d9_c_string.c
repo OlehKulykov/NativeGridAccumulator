@@ -55,3 +55,13 @@ void r2d9_c_str_release(char * R2D9_NULLABLE cString) {
         free(cString);
     }
 }
+
+void r2d9_c_str_release_zero_fill(char * R2D9_NULLABLE cString) {
+    if (cString) {
+        const size_t len = strlen(cString);
+        if (len) {
+            memset(cString, 0, len);
+        }
+        free(cString);
+    }
+}
