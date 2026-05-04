@@ -7,12 +7,15 @@
  * The contents of this project are proprietary and confidential.
  */
 
-#include "r2d9_crypto.hpp"
+#include <memory>
+#include <cstring>
 
 #include <openssl/evp.h>
 #include <openssl/params.h>
 #include <openssl/buffer.h>
 #include <openssl/bio.h>
+
+#include "r2d9_crypto.hpp"
 
 namespace r2d9 {
 namespace crypto {

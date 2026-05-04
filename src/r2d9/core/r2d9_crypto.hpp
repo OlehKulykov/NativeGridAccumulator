@@ -10,11 +10,11 @@
 #ifndef __R2D9_CRYPTO_HPP__
 #define __R2D9_CRYPTO_HPP__ 1
 
-#include <cinttypes>
 #include <memory>
 #include <array>
 #include <vector>
 #include <stdexcept>
+#include <cstring>
 
 #include "r2d9_fixed_string_stream.hpp"
 

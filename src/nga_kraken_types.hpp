@@ -20,8 +20,11 @@ namespace kraken {
     
     enum class OHLCPair : uint8_t {
         USDC_EUR    = 1,
-        SOL_USDC,
         ATOM_USDC,
+        BTC_USDC,
+        ETH_USDC,
+        POL_USDC,
+        SOL_USDC,
         TON_USDC
     };
     

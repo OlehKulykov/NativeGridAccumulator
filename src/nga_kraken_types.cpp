@@ -23,12 +23,15 @@ namespace kraken {
     
     typedef r2d9::PairPOD<const char *, OHLCPair> OHLCPairKeyType;
     
-    static constexpr size_t _OHLCPairKeyTypeArraySize = 4;
+    static constexpr size_t _OHLCPairKeyTypeArraySize = 7;
     
     static OHLCPairKeyType _OHLCPairKeysToTypes[_OHLCPairKeyTypeArraySize] = {
         { "USDCEUR", OHLCPair::USDC_EUR },
-        { "SOLUSDC", OHLCPair::SOL_USDC },
         { "ATOMUSDC", OHLCPair::ATOM_USDC },
+        { "BTCUSDC", OHLCPair::BTC_USDC },
+        { "ETHUSDC", OHLCPair::ETH_USDC },
+        { "POLUSDC", OHLCPair::POL_USDC },
+        { "SOLUSDC", OHLCPair::SOL_USDC },
         { "TONUSDC", OHLCPair::TON_USDC }
     };
     
@@ -57,8 +60,11 @@ namespace kraken {
     const char * R2D9_NONNULL OHLCPairDBName(const OHLCPair pair) noexcept {
         switch (pair) {
             case OHLCPair::USDC_EUR:  return "ohlc.usdc.eur.sqlite";
-            case OHLCPair::SOL_USDC:  return "ohlc.sol.usdc.sqlite";
             case OHLCPair::ATOM_USDC: return "ohlc.atom.usdc.sqlite";
+            case OHLCPair::BTC_USDC:  return "ohlc.btc.usdc.sqlite";
+            case OHLCPair::ETH_USDC:  return "ohlc.eth.usdc.sqlite";
+            case OHLCPair::POL_USDC:  return "ohlc.pol.usdc.sqlite";
+            case OHLCPair::SOL_USDC:  return "ohlc.sol.usdc.sqlite";
             case OHLCPair::TON_USDC:  return "ohlc.ton.usdc.sqlite";
             default: break;
         }

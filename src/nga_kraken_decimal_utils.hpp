@@ -19,7 +19,7 @@
 namespace nga {
 namespace kraken {
     
-    static constexpr const size_t maxDecimalCStringLen = 256;
+    constexpr const size_t maxDecimalCStringLen = 256;
     
     inline void decimalToCString(const boost::decimal::decimal64_t & decNum,
                                  char * cStr,
