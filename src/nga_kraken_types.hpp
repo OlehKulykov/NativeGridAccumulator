@@ -23,7 +23,6 @@ namespace kraken {
         ATOM_USDC,
         BTC_USDC,
         ETH_USDC,
-        POL_USDC,
         SOL_USDC,
         TON_USDC
     };
