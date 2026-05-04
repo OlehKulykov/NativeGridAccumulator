@@ -24,5 +24,23 @@ namespace kraken {
         return stream;
     }
     
+    DBOrder DBOrder::copy() const {
+        DBOrder order;
+        order.txId = txId;
+        order.clientId = clientId;
+        order.volume = volume;
+        order.cost = cost;
+        order.fee = fee;
+        order.price = price;
+        order.openTimestamp = openTimestamp;
+        order.status = status;
+        order.type = type;
+        order.pair = pair;
+        order.id = id;
+        order.parentId = parentId;
+        order.timestamp = timestamp;
+        return order;
+    }
+    
 } // namespace kraken
 } // namespace nga

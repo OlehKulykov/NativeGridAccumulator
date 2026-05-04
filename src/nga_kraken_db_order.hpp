@@ -22,6 +22,8 @@ namespace kraken {
         int64_t parentId{-1};
         int64_t timestamp{-1};
         
+        DBOrder copy() const;
+        
         DBOrder & operator = (const DBOrder &) = delete;
         DBOrder(const DBOrder &) = delete;
         

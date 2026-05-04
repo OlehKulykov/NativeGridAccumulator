@@ -23,7 +23,7 @@ namespace kraken {
     public:
         OrdersDB & open(const char * R2D9_NONNULL path, const bool init = false);
         
-        std::vector<DBOrder> select(const int64_t fromTimestamp);
+        std::vector<DBOrder> selectFromTimestamp(const int64_t fromTimestamp);
         
         int64_t insert();
         

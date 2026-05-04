@@ -8,8 +8,9 @@
  */
 
 #include <atomic>
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
 
 #define __R2D9_FILE__ "cURL"
 
@@ -63,7 +64,7 @@ namespace nga {
     }
     
     static size_t CURLRequestReadDataCallback(char * R2D9_NULLABLE contents, size_t size, size_t nmemb, void * R2D9_NULLABLE userp) noexcept {
-        auto * user = static_cast<Trio<const char *, size_t, size_t> *>(userp);
+        auto * user = static_cast<TrioPOD<const char *, size_t, size_t> *>(userp);
         const size_t readSize = std::min(user->second - user->third, size * nmemb);
         if (contents && readSize) {
             ::memcpy(contents, user->first + user->third, readSize);
@@ -193,7 +194,7 @@ namespace nga {
             throw std::runtime_error(stream);
         }
         
-        Trio<const char *, size_t, size_t> readDataUser;
+        TrioPOD<const char *, size_t, size_t> readDataUser;
         if (postData && postDataSize) {
             readDataUser.first = static_cast<const char *>(postData);
             readDataUser.second = postDataSize;

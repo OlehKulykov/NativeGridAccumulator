@@ -57,7 +57,7 @@ namespace kraken {
         return *this;
     }
     
-    std::vector<DBOrder> OrdersDB::select(const int64_t fromTimestamp) {
+    std::vector<DBOrder> OrdersDB::selectFromTimestamp(const int64_t fromTimestamp) {
         FixedStringStream<127> stream;
         ScopeGuard guard([&] () {
             stream.clear(true);
