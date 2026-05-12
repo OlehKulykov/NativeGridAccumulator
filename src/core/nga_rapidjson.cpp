@@ -1,0 +1,77 @@
+/*
+ * Copyright (C) 2025 - 2026 Oleh Kulykov <olehkulykov@gmail.com>
+ * All Rights Reserved.
+ *
+ * Unauthorized copying of this file, transferring or reproduction of the
+ * contents of this project, via any medium, is strictly prohibited.
+ * The contents of this project are proprietary and confidential.
+ */
+
+#include <cstddef>
+
+#include "nga_rapidjson.hpp"
+
+#include <rapidjson/document.h>
+
+namespace RAPIDJSON_NAMESPACE {
+    
+    const Value emptyArrayValue(kArrayType);
+    const Value emptyObjectValue(kObjectType);
+    
+    const char * NGA_NONNULL findCString(const Value & obj, const char * NGA_NONNULL key) {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsString()) {
+            return it->value.GetString() ?: emptyCString;
+        }
+        char reason[128];
+        ::snprintf(reason, 128, "String not found: %s", key);
+        throw std::runtime_error(reason);
+    }
+    
+    const char * NGA_NONNULL findCString(const Value & obj,
+                                         const char * NGA_NONNULL key,
+                                         const char * NGA_NONNULL defValue) noexcept {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsString()) {
+            return it->value.GetString() ?: emptyCString;
+        }
+        return defValue;
+    }
+    
+    const Value & findArray(const Value & obj, const char * NGA_NONNULL key) {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsArray()) {
+            return it->value;
+        }
+        char reason[128];
+        ::snprintf(reason, 128, "Array not found: %s", key);
+        throw std::runtime_error(reason);
+    }
+    
+    const Value & findArray(const Value & obj, const char * NGA_NONNULL key, const Value & defValue) noexcept {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsArray()) {
+            return it->value;
+        }
+        return defValue;
+    }
+    
+    const Value & findObject(const Value & obj, const char * NGA_NONNULL key) {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsObject()) {
+            return it->value;
+        }
+        char reason[128];
+        ::snprintf(reason, 128, "Object not found: %s", key);
+        throw std::runtime_error(reason);
+    }
+    
+    const Value & findObject(const Value & obj, const char * NGA_NONNULL key, const Value & defValue) noexcept {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsObject()) {
+            return it->value;
+        }
+        return defValue;
+    }
+    
+} // namespace RAPIDJSON_NAMESPACE

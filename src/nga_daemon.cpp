@@ -15,14 +15,14 @@
 #include <cerrno>
 #include <climits>
 
-#include "r2d9/r2d9.hpp"
+#include "nga.hpp"
 
 #if __has_include("ngad-config.pch")
 #  include "ngad-config.pch"
 #endif
 
-#include "nga_kraken_orders_db.hpp"
-#include "nga_kraken_api.hpp"
+#include "kraken/nga_kraken_orders_db.hpp"
+#include "kraken/nga_kraken_api.hpp"
 
 int main(int argc, const char * argv[]) {
     using namespace nga::kraken;

@@ -8,10 +8,9 @@
 cmake_minimum_required(VERSION 3.31)
 
 # https://semver.org
-set(CLIENT_VERSION_MAJOR 0)
-set(CLIENT_VERSION_MINOR 0)
-set(CLIENT_VERSION_PATCH 1)
-set(CLIENT_VERSION_BUILD 1)
+set(CLIENT_VERSION_MAJOR 1)
+set(CLIENT_VERSION_MINOR 10)
+set(CLIENT_VERSION_PATCH 0)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -33,7 +32,6 @@ project("${PROJECT_NAME}"
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
-#set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -67,6 +65,7 @@ option(OPT_BUILD_NUM "CI build number" 0)
 option(OPT_WITH_SYSTEM_CURL "Using installed cURL" OFF)
 option(OPT_WITH_SYSTEM_BOOST "Using installed Boost" OFF)
 option(OPT_WITH_SYSTEM_SQLITE "Using installed SQlite" OFF)
+option(OPT_WARNINGS_CXX "Enable C++ warnings." OFF)
 
 if (OPT_BUILD_NUM)
   set(CLIENT_VERSION_BUILD ${OPT_BUILD_NUM})
@@ -90,6 +89,7 @@ endif()
 string(TOLOWER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWER)
 string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} CMAKE_SYSTEM_PROCESSOR_LOWER)
 
+message("-- PROJECT_NAME:             ${PROJECT_NAME}")
 message("-- CMAKE_SYSTEM_NAME:        ${CMAKE_SYSTEM_NAME}")
 message("-- CMAKE_SYSTEM_PROCESSOR:   ${CMAKE_SYSTEM_PROCESSOR}")
 message("-- PROJECT_BINARY_DIR:       ${PROJECT_BINARY_DIR}")
@@ -142,7 +142,7 @@ execute_process(COMMAND git rev-parse --abbrev-ref HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
-if(R2D9_WARNINGS_CXX)
+if(OPT_WARNINGS_CXX)
   check_cxx_compiler_flag("-Wall" WITH_WALL_CXX)
   if(WITH_WALL_CXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
@@ -246,7 +246,7 @@ endif()
 
 # Boost
 if (NOT OPT_WITH_SYSTEM_BOOST)
-  set(BOOST_INCLUDE_LIBRARIES asio beast decimal)
+  set(BOOST_INCLUDE_LIBRARIES decimal)
   set(BOOST_ENABLE_CMAKE ON)
   FetchContent_Declare(Boost
     GIT_REPOSITORY https://github.com/boostorg/boost.git
@@ -261,7 +261,7 @@ if (NOT OPT_WITH_SYSTEM_BOOST)
   message("-- Found Boost include: ${BOOST_INCLUDE_LIBRARIES}")
   FetchContent_MakeAvailable(Boost)
 endif()
-find_package(Boost 1.91.0 EXACT REQUIRED COMPONENTS asio beast decimal)
+find_package(Boost 1.91.0 EXACT REQUIRED COMPONENTS decimal)
 
 # RapidJSON
 FetchContent_Declare(RapidJSON
@@ -280,11 +280,18 @@ if (NOT RapidJSON_INCLUDE_DIR)
   set(RapidJSON_INCLUDE_DIR "${RapidJSON_SOURCE_DIR}/include")
 endif()
 
-# --- definitions -----
-#add_definitions(-DR2D9_CPP17=1)
-add_definitions(-DR2D9_CPP20=1)
+# --- Definitions -----
+if(NGA_TEST)
+  add_definitions(-DNGA_TEST=1)
+  message("Added definition: NGA_TEST=1")
+endif()
 
-message("Added definition: R2D9_CPP20=1")
+if(OPT_OUTPUT)
+  add_definitions(-DNGA_OUTPUT=1)
+  message("Added definition: NGA_OUTPUT=1")
+endif()
+
+message("")
 
 # ----- Configuration -----
 set(NGA_HEADER_COPYRIGHT "/*
@@ -323,7 +330,7 @@ set(NGA_CONFIGURE_BODY "
 #define CLIENT_VERSION_MAJOR @CLIENT_VERSION_MAJOR@
 #define CLIENT_VERSION_MINOR @CLIENT_VERSION_MINOR@
 #define CLIENT_VERSION_PATCH @CLIENT_VERSION_PATCH@
-#define CLIENT_VERSION_BUILD @CLIENT_VERSION_BUILD@
+#cmakedefine CLIENT_VERSION_BUILD @CLIENT_VERSION_BUILD@
 #define CLIENT_VENDOR \"@CLIENT_VENDOR@\"
 #define CLIENT_TIMESTAMP \"@CLIENT_TIMESTAMP@\"
 #define COPYRIGHT_HOLDERS \"@COPYRIGHT_HOLDERS@\"
@@ -344,97 +351,129 @@ include_directories(${PROJECT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # ---- Sources & headers ----
-set(R2D9_HEADERS
-  src/r2d9/core/r2d9_c_string.h
-  src/r2d9/core/r2d9_data.hpp
-  src/r2d9/core/r2d9_file_utils.hpp
-  src/r2d9/core/r2d9_fixed_string_stream.hpp
-  src/r2d9/core/r2d9_http.hpp
-  src/r2d9/core/r2d9_logger.hpp
-  src/r2d9/core/r2d9_noexcept_unique_lock.hpp
-  src/r2d9/core/r2d9_pair.hpp
-  src/r2d9/core/r2d9_randomizer.hpp
-  src/r2d9/core/r2d9_raw_heap_memory.hpp
-  src/r2d9/core/r2d9_reusable.hpp
-  src/r2d9/core/r2d9_ring_queue.hpp
-  src/r2d9/core/r2d9_scope_guard.hpp
-  src/r2d9/core/r2d9_semi_fixed_array.hpp
-  src/r2d9/core/r2d9_sqlite_db.hpp
-  src/r2d9/core/r2d9_time_utils.hpp
-  src/r2d9/core/r2d9_trio.hpp
-  src/r2d9/core/r2d9_utils.hpp
-  src/r2d9/core/r2d9_dispatch_queue.hpp
-  src/r2d9/core/r2d9_crypto.hpp
-  src/r2d9/r2d9.h
-  src/r2d9/r2d9.hpp
-)
-
-set(R2D9_SOURCES
-  src/r2d9/core/r2d9_c_string.c
-  src/r2d9/core/r2d9_file_utils.cpp
-  src/r2d9/core/r2d9_http.cpp
-  src/r2d9/core/r2d9_logger.cpp
-  src/r2d9/core/r2d9_randomizer.cpp
-  src/r2d9/core/r2d9_sqlite_db.cpp
-  src/r2d9/core/r2d9_dispatch_queue.cpp
-  src/r2d9/core/r2d9_crypto.cpp
-)
-
-set(NGA_COMMON_HEADERS
-  src/nga_curl_request.hpp
-  src/nga_kraken_api_base.hpp
-  src/nga_kraken_decimal_utils.hpp
-  src/nga_kraken_orders_db.hpp
+set(NGA_CORE_HEADERS
+  src/core/nga_c_string.h
+  src/core/nga_crypto.hpp
+  src/core/nga_curl_request.hpp
+  src/core/nga_dispatch_queue.hpp
+  src/core/nga_file_utils.hpp
+  src/core/nga_fixed_string_stream.hpp
+  src/core/nga_http.hpp
+  src/core/nga_logger.hpp
+  src/core/nga_noexcept_unique_lock.hpp
+  src/core/nga_pair.hpp
+  src/core/nga_randomizer.hpp
+  src/core/nga_rapidjson.hpp
+  src/core/nga_raw_heap_memory.hpp
+  src/core/nga_reusable.hpp
+  src/core/nga_ring_queue.hpp
+  src/core/nga_scope_guard.hpp
+  src/core/nga_semi_fixed_array.hpp
+  src/core/nga_sqlite_db.hpp
+  src/core/nga_time_utils.hpp
+  src/core/nga_trio.hpp
+  src/core/nga_utils.hpp
   src/nga_types.hpp
-  src/nga_kraken_db_order.hpp
-  src/nga_kraken_order.hpp
-  src/nga_kraken_types.hpp
-  src/nga_kraken_api.hpp
+  src/nga.h
+  src/nga.hpp
 )
 
-set(NGA_COMMON_SOURCES
-  src/nga_curl_request.cpp
-  src/nga_kraken_db_order.cpp
-  src/nga_kraken_orders_db.cpp
-  src/nga_kraken_api_base.cpp
-  src/nga_kraken_order.cpp
-  src/nga_kraken_types.cpp
-  src/nga_kraken_api.cpp
+set(NGA_CORE_SOURCES
+  src/core/nga_c_string.c
+  src/core/nga_crypto.cpp
+  src/core/nga_curl_request.cpp
+  src/core/nga_dispatch_queue.cpp
+  src/core/nga_file_utils.cpp
+  src/core/nga_http.cpp
+  src/core/nga_rapidjson.cpp
+  src/core/nga_sqlite_db.cpp
+  src/core/nga_logger.cpp
+)
+
+set(NGA_KRAKEN_HEADERS
+  src/kraken/nga_kraken_api.hpp
+  src/kraken/nga_kraken_api_base.hpp
+  src/kraken/nga_kraken_api_error.hpp
+  src/kraken/nga_kraken_db_order.hpp
+  src/kraken/nga_kraken_decimal_utils.hpp
+  src/kraken/nga_kraken_dummy_calc.hpp
+  src/kraken/nga_kraken_icalc.hpp
+  src/kraken/nga_kraken_order.hpp
+  src/kraken/nga_kraken_order_profit.hpp
+  src/kraken/nga_kraken_orders_db.hpp
+  src/kraken/nga_kraken_types.hpp
+)
+
+set(NGA_KRAKEN_SOURCES
+  src/kraken/nga_kraken_api.cpp
+  src/kraken/nga_kraken_api_base.cpp
+  src/kraken/nga_kraken_api_error.cpp
+  src/kraken/nga_kraken_db_order.cpp
+  src/kraken/nga_kraken_order.cpp
+  src/kraken/nga_kraken_order_profit.cpp
+  src/kraken/nga_kraken_orders_db.cpp
+  src/kraken/nga_kraken_types.cpp
 )
 
 # ---- Groups ----
-source_group("r2d9"
+source_group("core"
   FILES
-  src/r2d9/core/r2d9_c_string.c
-  src/r2d9/core/r2d9_c_string.h
-  src/r2d9/core/r2d9_data.hpp
-  src/r2d9/core/r2d9_file_utils.cpp
-  src/r2d9/core/r2d9_file_utils.hpp
-  src/r2d9/core/r2d9_fixed_string_stream.hpp
-  src/r2d9/core/r2d9_http.cpp
-  src/r2d9/core/r2d9_http.hpp
-  src/r2d9/core/r2d9_logger.cpp
-  src/r2d9/core/r2d9_logger.hpp
-  src/r2d9/core/r2d9_noexcept_unique_lock.hpp
-  src/r2d9/core/r2d9_pair.hpp
-  src/r2d9/core/r2d9_randomizer.cpp
-  src/r2d9/core/r2d9_randomizer.hpp
-  src/r2d9/core/r2d9_raw_heap_memory.hpp
-  src/r2d9/core/r2d9_reusable.hpp
-  src/r2d9/core/r2d9_ring_queue.hpp
-  src/r2d9/core/r2d9_scope_guard.hpp
-  src/r2d9/core/r2d9_semi_fixed_array.hpp
-  src/r2d9/core/r2d9_sqlite_db.cpp
-  src/r2d9/core/r2d9_sqlite_db.hpp
-  src/r2d9/core/r2d9_time_utils.hpp
-  src/r2d9/core/r2d9_trio.hpp
-  src/r2d9/core/r2d9_utils.hpp
-  src/r2d9/core/r2d9_dispatch_queue.hpp
-  src/r2d9/core/r2d9_dispatch_queue.cpp
-  src/r2d9/core/r2d9_crypto.cpp
-  src/r2d9/core/r2d9_crypto.hpp
-  src/r2d9/r2d9.h
-  src/r2d9/r2d9.hpp
+  src/core/nga_c_string.c
+  src/core/nga_c_string.h
+  src/core/nga_crypto.cpp
+  src/core/nga_crypto.hpp
+  src/core/nga_curl_request.cpp
+  src/core/nga_curl_request.hpp
+  src/core/nga_dispatch_queue.cpp
+  src/core/nga_dispatch_queue.hpp
+  src/core/nga_file_utils.cpp
+  src/core/nga_file_utils.hpp
+  src/core/nga_fixed_string_stream.hpp
+  src/core/nga_http.cpp
+  src/core/nga_http.hpp
+  src/core/nga_logger.hpp
+  src/core/nga_noexcept_unique_lock.hpp
+  src/core/nga_pair.hpp
+  src/core/nga_randomizer.hpp
+  src/core/nga_rapidjson.cpp
+  src/core/nga_rapidjson.hpp
+  src/core/nga_raw_heap_memory.hpp
+  src/core/nga_reusable.hpp
+  src/core/nga_ring_queue.hpp
+  src/core/nga_scope_guard.hpp
+  src/core/nga_semi_fixed_array.hpp
+  src/core/nga_sqlite_db.cpp
+  src/core/nga_sqlite_db.hpp
+  src/core/nga_time_utils.hpp
+  src/core/nga_trio.hpp
+  src/core/nga_utils.hpp
+  src/core/src/core/nga_logger.cpp
+  src/nga_types.hpp
+  src/nga.h
+  src/nga.hpp
+)
+
+source_group("kraken"
+  FILES
+  src/kraken/nga_kraken_api.cpp
+  src/kraken/nga_kraken_api.hpp
+  src/kraken/nga_kraken_api_base.cpp
+  src/kraken/nga_kraken_api_base.hpp
+  src/kraken/nga_kraken_api_error.cpp
+  src/kraken/nga_kraken_api_error.hpp
+  src/kraken/nga_kraken_db_order.cpp
+  src/kraken/nga_kraken_db_order.hpp
+  src/kraken/nga_kraken_decimal_utils.hpp
+  src/kraken/nga_kraken_dummy_calc.hpp
+  src/kraken/nga_kraken_icalc.hpp
+  src/kraken/nga_kraken_order.cpp
+  src/kraken/nga_kraken_order.hpp
+  src/kraken/nga_kraken_order_profit.cpp
+  src/kraken/nga_kraken_order_profit.hpp
+  src/kraken/nga_kraken_orders_db.cpp
+  src/kraken/nga_kraken_orders_db.hpp
+  src/kraken/nga_kraken_types.cpp
+  src/kraken/nga_kraken_types.hpp
 )
 
 source_group("daemon"
@@ -442,31 +481,11 @@ source_group("daemon"
   src/nga_daemon.cpp
 )
 
-source_group("common"
-  FILES
-  src/nga_curl_request.cpp
-  src/nga_curl_request.hpp
-  src/nga_kraken_api.cpp
-  src/nga_kraken_api.hpp
-  src/nga_kraken_api_base.hpp
-  src/nga_kraken_decimal_utils.hpp
-  src/nga_kraken_orders_db.hpp
-  src/nga_types.hpp
-  src/nga_kraken_db_order.hpp
-  src/nga_kraken_order.hpp
-  src/nga_kraken_types.hpp
-  src/nga_kraken_db_order.cpp
-  src/nga_kraken_orders_db.cpp
-  src/nga_kraken_api_base.cpp
-  src/nga_kraken_order.cpp
-  src/nga_kraken_types.cpp
-)
-
 # ------ Binaries, Link (in Park) ---------
 add_executable(${NGA_DAEMON_NAME}
   "src/nga_daemon.cpp"
-  ${R2D9_HEADERS} ${R2D9_SOURCES}
-  ${NGA_COMMON_HEADERS} ${NGA_COMMON_SOURCES}
+  ${NGA_CORE_HEADERS} ${NGA_CORE_SOURCES}
+  ${NGA_KRAKEN_HEADERS} ${NGA_KRAKEN_SOURCES}
 )
 
 target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
@@ -474,8 +493,6 @@ target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
   PRIVATE "${RapidJSON_INCLUDE_DIR}"
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
-  PRIVATE Boost::asio
-  PRIVATE Boost::beast
   PRIVATE Boost::decimal
 )
 
@@ -484,8 +501,6 @@ target_link_libraries(${NGA_DAEMON_NAME}
   PRIVATE Threads::Threads
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
-  PRIVATE Boost::asio
-  PRIVATE Boost::beast
   PRIVATE Boost::decimal
 )
 
