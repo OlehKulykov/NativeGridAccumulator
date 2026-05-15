@@ -14,6 +14,7 @@
 #include <cstring>
 #include <cerrno>
 #include <climits>
+#include <uv.h>
 
 #include "nga.hpp"
 

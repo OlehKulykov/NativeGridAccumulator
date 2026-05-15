@@ -9,8 +9,8 @@ cmake_minimum_required(VERSION 3.31)
 
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
-set(CLIENT_VERSION_MINOR 10)
-set(CLIENT_VERSION_PATCH 0)
+set(CLIENT_VERSION_MINOR 12)
+set(CLIENT_VERSION_PATCH 1)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -62,6 +62,7 @@ endif()
 # ------ Options, consts ------
 option(OPT_DEPS_PATH "Deps path")
 option(OPT_BUILD_NUM "CI build number" 0)
+option(OPT_WITH_SYSTEM_LIBUV "Using installed libuv" OFF)
 option(OPT_WITH_SYSTEM_CURL "Using installed cURL" OFF)
 option(OPT_WITH_SYSTEM_BOOST "Using installed Boost" OFF)
 option(OPT_WITH_SYSTEM_SQLITE "Using installed SQlite" OFF)
@@ -175,6 +176,32 @@ if (UNIX)
   set(THREADS_PREFER_PTHREAD_FLAG 1)
 endif()
 find_package(Threads REQUIRED)
+
+# libuv
+if (OPT_WITH_SYSTEM_LIBUV)
+  include(FindPackageHandleStandardArgs)
+  set(LIBUV_NAMES libuv uv)
+  find_package(PkgConfig)
+  pkg_check_modules(PC_LIBUV QUIET ${LIBUV_NAMES})
+  find_path(LIBUV_INCLUDE_DIR uv.h HINTS ${PC_LIBUV_INCLUDEDIR} ${PC_LIBUV_INCLUDE_DIRS})
+  find_library(LIBUV_LIBRARIES NAMES ${LIBUV_NAMES} HINTS ${PC_LIBUV_LIBDIR} ${PC_LIBUV_LIBRARY_DIRS})
+  find_package_handle_standard_args(libuv DEFAULT_MSG LIBUV_LIBRARIES LIBUV_INCLUDE_DIR)
+  if (NOT libuv_FOUND)
+    message(FATAL_ERROR "Required libuv package/lib not found.")
+  endif()
+else()
+  message("-- Fetching libuv 1.52.1")
+  FetchContent_Declare(libuv
+    GIT_REPOSITORY https://github.com/libuv/libuv.git
+    GIT_TAG        1cfa32ff59c076ffb6ed735bbc8c18361558661f  # Release: v1.52.1: 2026.03.06
+    SYSTEM
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(libuv)
+  find_package(libuv 1.52.1 EXACT REQUIRED)
+endif()
+message("libuv include dir: ${LIBUV_INCLUDE_DIR}")
+message("libuv libraries: ${LIBUV_LIBRARIES}")
 
 # OpenSSL
 include(FindOpenSSL)
@@ -431,6 +458,7 @@ source_group("core"
   src/core/nga_fixed_string_stream.hpp
   src/core/nga_http.cpp
   src/core/nga_http.hpp
+  src/core/nga_logger.cpp
   src/core/nga_logger.hpp
   src/core/nga_noexcept_unique_lock.hpp
   src/core/nga_pair.hpp
@@ -447,7 +475,6 @@ source_group("core"
   src/core/nga_time_utils.hpp
   src/core/nga_trio.hpp
   src/core/nga_utils.hpp
-  src/core/src/core/nga_logger.cpp
   src/nga_types.hpp
   src/nga.h
   src/nga.hpp
@@ -491,6 +518,7 @@ add_executable(${NGA_DAEMON_NAME}
 target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
   PRIVATE "${CURL_INCLUDE_DIRS}"
   PRIVATE "${RapidJSON_INCLUDE_DIR}"
+  PRIVATE "${LIBUV_INCLUDE_DIR}"
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
   PRIVATE Boost::decimal
@@ -498,6 +526,7 @@ target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
 
 target_link_libraries(${NGA_DAEMON_NAME}
   PRIVATE ${CURL_LIBRARIES}
+  PRIVATE ${LIBUV_LIBRARIES}
   PRIVATE Threads::Threads
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
