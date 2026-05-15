@@ -190,6 +190,8 @@ if (OPT_WITH_SYSTEM_LIBUV)
     message(FATAL_ERROR "Required libuv package/lib not found.")
   endif()
 else()
+  set(ENABLE_CLANG_TIDY 0)
+  set(BUILD_SHARED_LIBS 1)
   message("-- Fetching libuv 1.52.1")
   FetchContent_Declare(libuv
     GIT_REPOSITORY https://github.com/libuv/libuv.git
@@ -200,8 +202,9 @@ else()
   FetchContent_MakeAvailable(libuv)
   find_package(libuv 1.52.1 EXACT REQUIRED)
 endif()
-message("libuv include dir: ${LIBUV_INCLUDE_DIR}")
-message("libuv libraries: ${LIBUV_LIBRARIES}")
+if (NOT TARGET libuv::libuv)
+  message(FATAL_ERROR "Required libuv target not found.")
+endif()
 
 # OpenSSL
 include(FindOpenSSL)
@@ -518,7 +521,7 @@ add_executable(${NGA_DAEMON_NAME}
 target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
   PRIVATE "${CURL_INCLUDE_DIRS}"
   PRIVATE "${RapidJSON_INCLUDE_DIR}"
-  PRIVATE "${LIBUV_INCLUDE_DIR}"
+  PRIVATE libuv::libuv
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
   PRIVATE Boost::decimal
@@ -526,7 +529,7 @@ target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
 
 target_link_libraries(${NGA_DAEMON_NAME}
   PRIVATE ${CURL_LIBRARIES}
-  PRIVATE ${LIBUV_LIBRARIES}
+  PRIVATE libuv::libuv
   PRIVATE Threads::Threads
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
