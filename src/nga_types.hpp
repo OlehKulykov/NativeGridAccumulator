@@ -10,9 +10,22 @@
 #ifndef __NGA_TYPES_HPP__
 #define __NGA_TYPES_HPP__ 1
 
+#include <utility>
 #include <ctime>
 
+#include "core/nga_trio.hpp"
+#include "core/nga_crypto.hpp"
+
+#include <boost/decimal/decimal128_t.hpp>
+
 namespace nga {
+    
+    typedef crypto::ZeroFillDataVector      DataVector;
+    typedef crypto::ZeroFillString          String;
+    typedef crypto::ZeroFillStringStream    StringStream;
+    typedef boost::decimal::decimal128_t    Decimal;
+    typedef std::pair<Decimal, Decimal>     AskBid;
+    typedef Trio<Decimal, Decimal, Decimal> AskBidIndex;
     
     enum class Trend : uint8_t {
         none    = 0,

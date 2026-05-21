@@ -22,36 +22,35 @@
 namespace nga {
 namespace kraken {
     
-    class API final : public APIBase {
+    class NGA_CPP_CLASS_API API final : public APIBase {
     private:
-        std::shared_ptr<ReusableMT<crypto::ZeroFillDataVector> > _reusable;
+        std::shared_ptr<ReusableMT<DataVector> > _reusable;
         
-        static std::pair<decimal_t, decimal_t> parseBestAskBid(uint8_t * NGA_NULLABLE, const OHLCPair);
+        static AskBid parseBestAskBid(uint8_t * NGA_NULLABLE, const OHLCPair);
         static std::vector<Order> parseOrders(uint8_t * NGA_NULLABLE, const char * NGA_NONNULL);
-        static crypto::ZeroFillString parseAddOrderTransactionId(uint8_t * NGA_NULLABLE);
-        static crypto::ZeroFillString parseAmendOrderId(uint8_t * NGA_NULLABLE);
+        static String parseAddOrderTransactionId(uint8_t * NGA_NULLABLE);
+        static String parseAmendOrderId(uint8_t * NGA_NULLABLE);
         static std::array<char, 24> generateClientOrderId() noexcept;
         
     public:
-        Order fetchOpenOrder(const crypto::ZeroFillString & clientOrderId);
+        Order fetchOpenOrder(const String & clientOrderId);
         
         std::vector<Order> fetchOpenOrders();
         
-        Order fetchClosedOrder(const crypto::ZeroFillString & clientOrderId);
+        Order fetchClosedOrder(const String & clientOrderId);
         
         std::vector<Order> fetchClosedOrders();
         
-        std::pair<decimal_t, decimal_t> fetchBestAskBid(const OHLCPair pair);
+        AskBid fetchBestAskBid(const OHLCPair pair);
         
         Order addOrder(const Order & sourceOrder, const bool validateOnly);
         
         void amendOrder(const Order & sourceOrder);
         
-        API(crypto::ZeroFillString && apiKey,
-            crypto::ZeroFillString && privateKey,
-            const std::shared_ptr<ReusableMT<crypto::ZeroFillDataVector> > & reusable = nullptr);
+        API(String && apiKey, String && privateKey,
+            const std::shared_ptr<ReusableMT<DataVector> > & reusable = nullptr);
         
-        API(const std::shared_ptr<ReusableMT<crypto::ZeroFillDataVector> > & reusable);
+        API(const std::shared_ptr<ReusableMT<DataVector> > & reusable);
         
         ~API() noexcept = default;
     };

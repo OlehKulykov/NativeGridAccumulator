@@ -74,4 +74,22 @@ namespace RAPIDJSON_NAMESPACE {
         return defValue;
     }
     
+    bool findBool(const Value & obj, const char * NGA_NONNULL key) {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsBool()) {
+            return it->value.GetBool();
+        }
+        char reason[128];
+        ::snprintf(reason, 128, "Boolean not found: %s", key);
+        throw std::runtime_error(reason);
+    }
+    
+    bool findBool(const Value & obj, const char * NGA_NONNULL key, const bool defValue) noexcept {
+        const auto it = obj.FindMember(key);
+        if (it != obj.MemberEnd() && it->value.IsBool()) {
+            return it->value.GetBool();
+        }
+        return defValue;
+    }
+    
 } // namespace RAPIDJSON_NAMESPACE

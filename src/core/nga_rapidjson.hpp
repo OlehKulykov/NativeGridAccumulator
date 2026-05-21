@@ -41,6 +41,9 @@ namespace RAPIDJSON_NAMESPACE {
     NGA_CPP_API_PRIVATE(const Value &) findObject(const Value & obj, const char * NGA_NONNULL key);
     NGA_CPP_API_PRIVATE(const Value &) findObject(const Value & obj, const char * NGA_NONNULL key, const Value & defValue) noexcept;
     
+    NGA_CPP_API_PRIVATE(bool) findBool(const Value & obj, const char * NGA_NONNULL key);
+    NGA_CPP_API_PRIVATE(bool) findBool(const Value & obj, const char * NGA_NONNULL key, const bool defValue) noexcept;
+    
     template<typename T>
     T findString(const Value & obj, const char * NGA_NONNULL key) {
         return T(findCString(obj, key));

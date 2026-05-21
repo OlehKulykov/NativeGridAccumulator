@@ -11,8 +11,6 @@
 #include <cstdlib>      // strtoll
 #include <cstdio>       // snprintf
 
-#define __NGA_FILE__ "FileUtils"
-
 #include "nga_scope_guard.hpp"
 
 #include <unistd.h>     // getpid
@@ -71,11 +69,11 @@ namespace file {
     pid_t readPID(const char * NGA_NONNULL path) {
         FILE * f = ::fopen(path, "rb");
         if (!f) {
-            throw std::runtime_error("Open PID file for reading");
+            return 0;
         }
         
         char buff[32];
-        const size_t r = ::fread(buff, 1, 32, f);
+        const size_t r = ::fread(static_cast<char *>(buff), 1, 32, f);
         ::fclose(f);
         if (r == 0) {
             return 0;
@@ -83,7 +81,7 @@ namespace file {
         
         if (r < 32) {
             buff[r] = 0;
-            const long long pid = ::strtoll(buff, nullptr, 10);
+            const auto pid = ::strtoll(static_cast<const char *>(buff), nullptr, 10);
             if (pid > 0) {
                 return static_cast<pid_t>(pid);
             }
@@ -99,18 +97,20 @@ namespace file {
         }
         
         char buff[32];
-        const int len = ::snprintf(buff, 32, "%" PRIu64, (uint64_t)p);
+        const int len = ::snprintf(static_cast<char *>(buff), 32, "%" PRIu64 "\n", static_cast<uint64_t>(p));
         if (len <= 0) {
             throw std::runtime_error("Generate PID string");
         }
         
         FILE * f = ::fopen(path, "w+b");
         if (!f) {
-            throw std::runtime_error("Open PID file for writing");
+            char reason[256];
+            ::snprintf(reason, 256, "Open PID file for writing, errno: %i (%s)", errno, ::strerror(errno));
+            throw std::runtime_error(reason);
         }
         
         bool isWriteError = false;
-        if (::fwrite(buff, len, 1, f) != 1) {
+        if (::fwrite(static_cast<const char *>(buff), len, 1, f) != 1) {
             isWriteError = true;
         }
         ::fclose(f);
@@ -127,7 +127,9 @@ namespace file {
         
         static const char * dnPath = "/dev/null";
         if ((::freopen(dnPath, "r", ::stdin) == nullptr) || (::freopen(dnPath, "w", ::stdout) == nullptr) || (::freopen(dnPath, "w", ::stderr) == nullptr)) {
-            throw std::runtime_error("Reopen std file descriptors");
+            char reason[256];
+            ::snprintf(reason, 256, "Reopen std file descriptors, errno: %i (%s)", errno, ::strerror(errno));
+            throw std::runtime_error(reason);
         }
     }
     

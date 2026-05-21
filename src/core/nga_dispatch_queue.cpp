@@ -19,7 +19,7 @@ namespace nga {
 #if defined(DEBUG) && defined(__APPLE__)
         char threadName[32];
         ::snprintf(threadName, 32, "Dispatch thread");
-        pthread_setname_np(threadName);
+        ::pthread_setname_np(threadName);
 #endif
         std::unique_lock<std::mutex> lock(_mutex);
         do {

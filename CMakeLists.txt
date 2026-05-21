@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.31)
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
 set(CLIENT_VERSION_MINOR 12)
-set(CLIENT_VERSION_PATCH 1)
+set(CLIENT_VERSION_PATCH 16)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -49,6 +49,7 @@ set(NGA_APP nativegridaccumulator)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
+include(CheckIncludeFileCXX)
 include(CheckSymbolExists)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
@@ -160,6 +161,9 @@ if(OPT_WARNINGS_CXX)
   endif()
 endif()
 
+# ------ Find headers ------
+check_include_file(sys/utsname.h HAVE_SYS_UTSNAME_H)
+
 # ------ Find package ------
 if (OPT_DEPS_PATH)
   set(TMP_STRING "${OPT_DEPS_PATH}")
@@ -201,9 +205,9 @@ else()
   )
   FetchContent_MakeAvailable(libuv)
   find_package(libuv 1.52.1 EXACT REQUIRED)
-endif()
-if (NOT TARGET libuv::libuv)
-  message(FATAL_ERROR "Required libuv target not found.")
+  if (NOT TARGET libuv::libuv)
+    message(FATAL_ERROR "Required libuv target not found.")
+  endif()
 endif()
 
 # OpenSSL
@@ -336,16 +340,11 @@ set(NGA_HEADER_COPYRIGHT "/*
 ")
 
 set(NGA_CONFIGURE_BODY "
-#if defined(NDEBUG)
-#  undef NDEBUG
-#endif
-
 #if defined(__cplusplus)
-#  include <cstdlib>
+#  include <limits>
 #  include <cstdint>
 #  include <cinttypes>
 #else
-#  include <stdlib.h>
 #  include <stdint.h>
 #  include <inttypes.h>
 #endif
@@ -365,6 +364,8 @@ set(NGA_CONFIGURE_BODY "
 #define CLIENT_TIMESTAMP \"@CLIENT_TIMESTAMP@\"
 #define COPYRIGHT_HOLDERS \"@COPYRIGHT_HOLDERS@\"
 #define COPYRIGHT_YEAR @COPYRIGHT_YEAR@
+
+#cmakedefine HAVE_SYS_UTSNAME_H @HAVE_SYS_UTSNAME_H@
 ")
 
 file(CONFIGURE
@@ -422,6 +423,7 @@ set(NGA_CORE_SOURCES
 
 set(NGA_KRAKEN_HEADERS
   src/kraken/nga_kraken_api.hpp
+  src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_api_base.hpp
   src/kraken/nga_kraken_api_error.hpp
   src/kraken/nga_kraken_db_order.hpp
@@ -430,7 +432,9 @@ set(NGA_KRAKEN_HEADERS
   src/kraken/nga_kraken_icalc.hpp
   src/kraken/nga_kraken_order.hpp
   src/kraken/nga_kraken_order_profit.hpp
+  src/kraken/nga_kraken_order_settings_base.hpp
   src/kraken/nga_kraken_orders_db.hpp
+  src/kraken/nga_kraken_telegram_message.hpp
   src/kraken/nga_kraken_types.hpp
 )
 
@@ -442,7 +446,19 @@ set(NGA_KRAKEN_SOURCES
   src/kraken/nga_kraken_order.cpp
   src/kraken/nga_kraken_order_profit.cpp
   src/kraken/nga_kraken_orders_db.cpp
+  src/kraken/nga_kraken_telegram_message.cpp
   src/kraken/nga_kraken_types.cpp
+)
+
+set(NGA_TELEGRAM_HEADERS
+  src/telegram/nga_telegram_bot.hpp
+  src/telegram/nga_telegram_config.hpp
+  src/telegram/nga_telegram_message_base.hpp
+)
+
+set(NGA_TELEGRAM_SOURCES
+  src/telegram/nga_telegram_bot.cpp
+  src/telegram/nga_telegram_message_base.cpp
 )
 
 # ---- Groups ----
@@ -487,6 +503,7 @@ source_group("kraken"
   FILES
   src/kraken/nga_kraken_api.cpp
   src/kraken/nga_kraken_api.hpp
+  src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_api_base.cpp
   src/kraken/nga_kraken_api_base.hpp
   src/kraken/nga_kraken_api_error.cpp
@@ -500,10 +517,22 @@ source_group("kraken"
   src/kraken/nga_kraken_order.hpp
   src/kraken/nga_kraken_order_profit.cpp
   src/kraken/nga_kraken_order_profit.hpp
+  src/kraken/nga_kraken_order_settings_base.hpp
   src/kraken/nga_kraken_orders_db.cpp
   src/kraken/nga_kraken_orders_db.hpp
+  src/kraken/nga_kraken_telegram_message.cpp
+  src/kraken/nga_kraken_telegram_message.hpp
   src/kraken/nga_kraken_types.cpp
   src/kraken/nga_kraken_types.hpp
+)
+
+source_group("telegram"
+  FILES
+  src/telegram/nga_telegram_bot.cpp
+  src/telegram/nga_telegram_bot.hpp
+  src/telegram/nga_telegram_config.hpp
+  src/telegram/nga_telegram_message_base.cpp
+  src/telegram/nga_telegram_message_base.hpp
 )
 
 source_group("daemon"
@@ -516,12 +545,12 @@ add_executable(${NGA_DAEMON_NAME}
   "src/nga_daemon.cpp"
   ${NGA_CORE_HEADERS} ${NGA_CORE_SOURCES}
   ${NGA_KRAKEN_HEADERS} ${NGA_KRAKEN_SOURCES}
+  ${NGA_TELEGRAM_HEADERS} ${NGA_TELEGRAM_SOURCES}
 )
 
 target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
   PRIVATE "${CURL_INCLUDE_DIRS}"
   PRIVATE "${RapidJSON_INCLUDE_DIR}"
-  PRIVATE libuv::libuv
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
   PRIVATE Boost::decimal
@@ -529,12 +558,27 @@ target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
 
 target_link_libraries(${NGA_DAEMON_NAME}
   PRIVATE ${CURL_LIBRARIES}
-  PRIVATE libuv::libuv
   PRIVATE Threads::Threads
   PRIVATE SQLite::SQLite3
   PRIVATE OpenSSL::Crypto
   PRIVATE Boost::decimal
 )
+
+if (TARGET libuv::libuv)
+  target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
+    PRIVATE libuv::libuv
+  )
+  target_link_libraries(${NGA_DAEMON_NAME}
+    PRIVATE libuv::libuv
+  )
+else()
+  target_include_directories(${NGA_DAEMON_NAME} SYSTEM AFTER
+    PRIVATE "${LIBUV_INCLUDE_DIR}"
+  )
+  target_link_libraries(${NGA_DAEMON_NAME}
+    PRIVATE ${LIBUV_LIBRARIES}
+  )
+endif()
 
 if(APPLE)
   target_link_libraries(${NGA_DAEMON_NAME}

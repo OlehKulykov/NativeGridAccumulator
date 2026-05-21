@@ -80,7 +80,7 @@ namespace nga {
         template<typename T>
         inline operator T () const noexcept { return static_cast<T>(_buffer); }
         
-        void clear(const bool withZeros = false) noexcept {
+        void clear(const bool withZeros = true) noexcept {
             if (withZeros) {
                 ::memset(static_cast<char *>(_buffer), 0, MAX_LENGTH + 1);
             } else {
@@ -228,8 +228,24 @@ namespace nga {
             return os;
         }
         
+        FixedStringStream & operator = (const FixedStringStream & fs) noexcept {
+            if ( (_length = fs._length) ) {
+                ::memcpy(static_cast<char *>(_buffer), static_cast<const char *>(fs._buffer), _length);
+            }
+            _buffer[_length] = 0;
+            return *this;
+        }
+        
+        FixedStringStream(const FixedStringStream & fs) noexcept {
+            *this = fs;
+        }
+        
         FixedStringStream() noexcept {
             _buffer[0] = 0;
+        }
+        
+        ~FixedStringStream() noexcept {
+            ::memset(static_cast<char *>(_buffer), 0, MAX_LENGTH + 1);
         }
     };
 

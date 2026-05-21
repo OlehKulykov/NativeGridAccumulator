@@ -37,7 +37,7 @@ namespace kraken {
     }
     
     template<>
-    crypto::ZeroFillStringStream Order::description(const DBOrder & order) {
+    StringStream Order::description(const DBOrder & order) {
         auto stream = Order::description<Order>(order);
         stream << ", id: " << order.id
         << ", parentId: " << order.parentId

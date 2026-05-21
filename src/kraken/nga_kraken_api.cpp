@@ -25,7 +25,7 @@ namespace nga {
 namespace kraken {
     
     ///@link https://docs.kraken.com/api/docs/rest-api/get-open-orders
-    Order API::fetchOpenOrder(const crypto::ZeroFillString & clientOrderId) {
+    Order API::fetchOpenOrder(const String & clientOrderId) {
         auto reusable = _reusable ? _reusable->get() : nullptr;
         ScopeGuard guard([=] {
             if (reusable) {
@@ -67,7 +67,7 @@ namespace kraken {
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/get-closed-orders
-    Order API::fetchClosedOrder(const crypto::ZeroFillString & clientOrderId) {
+    Order API::fetchClosedOrder(const String & clientOrderId) {
         auto reusable = _reusable ? _reusable->get() : nullptr;
         ScopeGuard guard([=] {
             if (reusable) {
@@ -109,7 +109,7 @@ namespace kraken {
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/get-order-book
-    std::pair<decimal_t, decimal_t> API::fetchBestAskBid(const OHLCPair pair) {
+    AskBid API::fetchBestAskBid(const OHLCPair pair) {
         auto reusable = _reusable ? _reusable->get() : nullptr;
         ScopeGuard guard([=] {
             if (reusable) {
@@ -138,8 +138,7 @@ namespace kraken {
         const char * type = (sourceOrder.type == OrderType::buy) ? orderTypeBuy : orderTypeSell;
         const char * validate = validateOnly ? "true" : "false";
         
-        char volume[maxDecimalCStringLen],
-        price[maxDecimalCStringLen];
+        char volume[maxDecimalCStringLen], price[maxDecimalCStringLen];
         
         decimalToCString(sourceOrder.volume, volume);
         decimalToCString(sourceOrder.price, price);
@@ -196,8 +195,7 @@ namespace kraken {
             throw std::invalid_argument("API: no order transaction or client identifier");
         }
         
-        char orderQuantity[maxDecimalCStringLen],
-        limitPrice[maxDecimalCStringLen];
+        char orderQuantity[maxDecimalCStringLen], limitPrice[maxDecimalCStringLen];
         
         decimalToCString(sourceOrder.volume, orderQuantity);
         decimalToCString(sourceOrder.price, limitPrice);
@@ -216,14 +214,13 @@ namespace kraken {
         }
     }
     
-    API::API(crypto::ZeroFillString && apiKey,
-             crypto::ZeroFillString && privateKey,
-             const std::shared_ptr<ReusableMT<crypto::ZeroFillDataVector> > & reusable) : APIBase(std::move(apiKey), std::move(privateKey)),
+    API::API(String && apiKey, String && privateKey,
+             const std::shared_ptr<ReusableMT<DataVector> > & reusable) : APIBase(std::move(apiKey), std::move(privateKey)),
         _reusable(reusable) {
         
     }
     
-    API::API(const std::shared_ptr<ReusableMT<crypto::ZeroFillDataVector> > & reusable) : APIBase(),
+    API::API(const std::shared_ptr<ReusableMT<DataVector> > & reusable) : APIBase(),
         _reusable(reusable) {
         
     }
@@ -244,7 +241,7 @@ namespace kraken {
         
         auto & errorArray = findArray(doc, "error", emptyArrayValue);
         if (errorArray.Size()) {
-            crypto::ZeroFillStringStream fallbackStream;
+            StringStream fallbackStream;
             fallbackStream << "API: errors: [";
             for (size_t i = 0, j = 0, n = errorArray.Size(); i < n; i++) {
                 const auto & error = errorArray[i];
@@ -279,7 +276,7 @@ namespace kraken {
         std::vector<Order> res;
         res.reserve(orders.MemberCount());
         
-        const decimal_t decZero(0);
+        const Decimal decZero(0);
         for (auto it = orders.MemberBegin(); it != orders.MemberEnd(); ++it) {
             const char * txId = it->name.GetString();
             if (txId && it->value.IsObject()) {
@@ -292,10 +289,10 @@ namespace kraken {
                 order.txId = txId;
                 order.clientId = findCString(it->value, "cl_ord_id", emptyCString);
                 order.openTimestamp = findNumber<double>(it->value, "opentm", -1);
-                order.volume = findString<decimal_t>(it->value, "vol");
-                order.cost = findString<decimal_t>(it->value, "cost");
-                order.fee = findString<decimal_t>(it->value, "fee");
-                order.price = findString<decimal_t>(it->value, "price");
+                order.volume = findString<Decimal>(it->value, "vol");
+                order.cost = findString<Decimal>(it->value, "cost");
+                order.fee = findString<Decimal>(it->value, "fee");
+                order.price = findString<Decimal>(it->value, "price");
                 
                 auto & descr = findObject(it->value, "descr");
                 order.pair = OHLCPairFromKey(findCString(descr, "pair"));
@@ -308,7 +305,7 @@ namespace kraken {
                     throw std::runtime_error("Unknown order type");
                 }
                 
-                const decimal_t descrPrice = findString<decimal_t>(descr, "price");
+                const Decimal descrPrice = findString<Decimal>(descr, "price");
                 if ((order.price <= decZero) && (descrPrice > decZero)) {
                     order.price = descrPrice;
                 }
@@ -320,8 +317,8 @@ namespace kraken {
         return res;
     }
     
-    std::pair<decimal_t, decimal_t> API::parseBestAskBid(uint8_t * NGA_NULLABLE jsonData, const OHLCPair aPair) {
-        std::pair<decimal_t, decimal_t> res(-1, -1);
+    AskBid API::parseBestAskBid(uint8_t * NGA_NULLABLE jsonData, const OHLCPair aPair) {
+        AskBid res(-1, -1);
         if (!jsonData) {
             return res;
         }
@@ -341,10 +338,10 @@ namespace kraken {
                     auto & ask = ask0[0], & bid = bid0[0];
                     if (ask.IsString() && bid.IsString()) {
                         if (ask.GetStringLength()) {
-                            res.first = decimal_t(ask.GetString());
+                            res.first = Decimal(ask.GetString());
                         }
                         if (bid.GetStringLength()) {
-                            res.second = decimal_t(bid.GetString());
+                            res.second = Decimal(bid.GetString());
                         }
                     }
                 }
@@ -355,7 +352,7 @@ namespace kraken {
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/add-order
-    crypto::ZeroFillString API::parseAddOrderTransactionId(uint8_t * NGA_NULLABLE jsonData) {
+    String API::parseAddOrderTransactionId(uint8_t * NGA_NULLABLE jsonData) {
         if (!jsonData) {
             return {};
         }
@@ -363,7 +360,7 @@ namespace kraken {
         auto doc = APICreateDocument(jsonData);
         auto & result = findObject(doc, "result", emptyObjectValue);
         
-        auto res = findString<crypto::ZeroFillString>(result, "txid", emptyCString);
+        auto res = findString<String>(result, "txid", emptyCString);
         if (!res.empty()) {
             return res;
         }
@@ -379,7 +376,7 @@ namespace kraken {
         return res;
     }
     
-    crypto::ZeroFillString API::parseAmendOrderId(uint8_t * NGA_NULLABLE jsonData) {
+    String API::parseAmendOrderId(uint8_t * NGA_NULLABLE jsonData) {
         if (!jsonData) {
             return {};
         }
@@ -387,7 +384,7 @@ namespace kraken {
         auto doc = APICreateDocument(jsonData);
         auto & result = findObject(doc, "result", emptyObjectValue);
         
-        return findString<crypto::ZeroFillString>(result, "amend_id", emptyCString);
+        return findString<String>(result, "amend_id", emptyCString);
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/add-order

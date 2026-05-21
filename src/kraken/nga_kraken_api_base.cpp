@@ -43,21 +43,17 @@ namespace kraken {
     
     template<class T>
     inline static void APIBaseSetHost(T & url) {
-        url << "https" << ':' << '/' << '/';
+        url << "http" << 's' << ':' << '/' << '/';
         url << "api" << '.';
         url << "kra" << "ken";
         url << '.' << "com";
     }
     
     NGA_REQUIRES_LAST_NULL_ARG
-    std::shared_ptr<crypto::ZeroFillDataVector> APIBase::requestPublic(const char * NGA_NONNULL method,
-                                                                       std::shared_ptr<crypto::ZeroFillDataVector> && reusable,
-                                                                       const char * NGA_NULLABLE firstQueryArg, ...) {
+    std::shared_ptr<DataVector> APIBase::requestPublic(const char * NGA_NONNULL method,
+                                                       std::shared_ptr<DataVector> && reusable,
+                                                       const char * NGA_NULLABLE firstQueryArg, ...) {
         FixedStringStream<4095> url;
-        ScopeGuard urlGuard([&] () {
-            url.clear(true);
-        });
-        
         APIBaseSetHost(url);
         url << '/' << '0' << '/' << "public" << '/' << method;
         
@@ -77,9 +73,9 @@ namespace kraken {
     
     // https://docs.kraken.com/api/docs/guides/spot-rest-auth
     NGA_REQUIRES_LAST_NULL_ARG
-    std::shared_ptr<crypto::ZeroFillDataVector> APIBase::requestPrivate(const char * NGA_NONNULL method,
-                                                                        std::shared_ptr<crypto::ZeroFillDataVector> && reusable,
-                                                                        const char * NGA_NULLABLE firstPostArg, ...) {
+    std::shared_ptr<DataVector> APIBase::requestPrivate(const char * NGA_NONNULL method,
+                                                        std::shared_ptr<DataVector> && reusable,
+                                                        const char * NGA_NULLABLE firstPostArg, ...) {
         if (_aKey.empty() || _pKey.empty()) {
             throw std::invalid_argument("Can't use private API without keys");
         }
@@ -87,11 +83,6 @@ namespace kraken {
         FixedStringStream<4095> payload;
         FixedStringStream<383> url;
         FixedStringStream<255> path;
-        ScopeGuard streamsGuard([&] () {
-            payload.clear(true);
-            url.clear(true);
-            path.clear(true);
-        });
         
         APIBaseSetHost(url);
         path << '/' << '0' << '/' << "private" << '/' << method;
@@ -120,7 +111,7 @@ namespace kraken {
         
         const auto pathHmacSha512 = crypto::hmacSha512(_pKey.data(), _pKey.size(), path, path.length());
         
-        crypto::ZeroFillString headerAPIKey, headerAPISign;
+        String headerAPIKey, headerAPISign;
         headerAPIKey.reserve(128);
         headerAPISign.reserve(128);
         headerAPIKey.append("API").append("-Key").append(": ").append(_aKey);
@@ -154,7 +145,7 @@ namespace kraken {
         return res;
     }
     
-    APIBase::APIBase(crypto::ZeroFillString && apiKey, crypto::ZeroFillString && privateKey) {
+    APIBase::APIBase(String && apiKey, String && privateKey) {
         auto headers = generateHeaders();
         auto pKey = std::move(privateKey);
         _pKey = crypto::base64Decode(pKey.c_str(), pKey.length());
@@ -183,7 +174,7 @@ namespace kraken {
     APIBase::DefaultHeaders APIBase::generateHeaders() {
         DefaultHeaders headers;
         for (size_t i = 0; i < headers.size(); i++) {
-            crypto::ZeroFillStringStream stream;
+            StringStream stream;
             switch (i) {
                 case 0:  stream << http::headerAccept         << ": " << "application/json"; break;
                 case 1:  stream << http::headerAcceptLanguage << ": " << "en-US"; break;
@@ -194,37 +185,6 @@ namespace kraken {
             headers[i] = stream.str();
         }
         return headers;
-    }
-    
-    ///@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/User-Agent
-    crypto::ZeroFillString APIBase::generateUserAgent() {
-        crypto::ZeroFillStringStream stream;
-        stream << "Nat" << "ive" << "Gri" << "dAc" << "cumu" << "lator";
-#if defined(NGA_VERSION)
-        stream << '/' << "" NGA_VERSION;
-#endif
-        
-        struct utsname systemInfo;
-        if (::uname(&systemInfo) == 0) {
-            stream << " (" << systemInfo.sysname << ' ' << systemInfo.release << "; " << systemInfo.machine;
-#if defined(__GNUC__) && defined(__VERSION__)
-            stream << "; " << "GCC " __VERSION__;
-#endif
-            stream << ')';
-        }
-        stream << ' ' << "Kra" << "ken" << ' ' << "REST" << ' ' << "API" << ' ' << "C++" << ' ' << "client";
-        
-        auto * curlInfo = ::curl_version_info(CURLVERSION_NOW);
-        if (curlInfo) {
-            if (curlInfo->version) {
-                stream << ' ' << "cURL" << '/' << curlInfo->version;
-            }
-            if (curlInfo->ssl_version) {
-                stream << ' ' << curlInfo->ssl_version;
-            }
-        }
-        
-        return stream.str();
     }
     
 } // namespace kraken

@@ -7,6 +7,7 @@
  * The contents of this project are proprietary and confidential.
  */
 
+#include <stdexcept>
 #include <atomic>
 #include <algorithm>
 #include <cstddef>
@@ -18,6 +19,10 @@
 #include "nga_c_string.h"
 
 #include <curl/curl.h>
+
+#if defined(HAVE_SYS_UTSNAME_H) || __has_include(<sys/utsname.h>)
+#  include <sys/utsname.h>
+#endif
 
 #include "nga_curl_request.hpp"
 
@@ -75,9 +80,6 @@ namespace nga {
                                                         const char * NGA_NULLABLE * NGA_NULLABLE headers,
                                                         const size_t headersCount) {
         FixedStringStream<255> stream;
-        ScopeGuard lock([&] {
-            stream.clear(true);
-        });
         
         ///@link https://curl.se/libcurl/c/httpcustomheader.html
         CURLSListUPtr headersSList;
@@ -147,9 +149,7 @@ namespace nga {
                                                                  const size_t headersCount,
                                                                  std::shared_ptr<crypto::ZeroFillDataVector> && responceData) {
         CURLRequest::globalInit();
-        FixedStringStream<255> stream;
-        ScopeGuard lock([&] {
-            stream.clear(true);
+        ScopeGuard lock([] {
             CURLRequest::globalDeinit();
         });
         
@@ -162,6 +162,7 @@ namespace nga {
             movedData = std::make_shared<crypto::ZeroFillDataVector>();
         }
         
+        FixedStringStream<255> stream;
         CURLcode res;
         if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_WRITEDATA, movedData.get())) != CURLE_OK ) {
             stream << "Write data: " << ::curl_easy_strerror(res);
@@ -183,14 +184,13 @@ namespace nga {
                                                                   const size_t postDataSize,
                                                                   std::shared_ptr<crypto::ZeroFillDataVector> && responceData) {
         CURLRequest::globalInit();
-        FixedStringStream<255> stream;
-        ScopeGuard lock([&] {
-            stream.clear(true);
+        ScopeGuard lock([] {
             CURLRequest::globalDeinit();
         });
         
         auto base = CURLRequestCreateBaseRequest(url, headers, headersCount);
         
+        FixedStringStream<255> stream;
         CURLcode res;
         if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_POST, 1L)) != CURLE_OK ) {
             stream << "Set POST: " << ::curl_easy_strerror(res);
@@ -257,4 +257,63 @@ namespace nga {
         }
     }
 
+    ///@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/User-Agent
+    static crypto::ZeroFillString CURLRequestUASystemInformation() {
+        crypto::ZeroFillStringStream stream;
+#if defined(HAVE_SYS_UTSNAME_H) || __has_include(<sys/utsname.h>)
+        struct utsname systemInfo;
+        if (::uname(&systemInfo) == 0) {
+            stream << " (" << systemInfo.sysname << ' ' << systemInfo.release << "; " << systemInfo.machine;
+#  if defined(__GNUC__) && defined(__VERSION__)
+            stream << "; GCC " __VERSION__;
+#  endif
+            stream << ')';
+            return stream.str();
+        }
+#endif
+        
+#if defined(BUILD_SYSTEM_NAME) && defined(BUILD_SYSTEM_PROCESSOR)
+        stream << " (" BUILD_SYSTEM_NAME "; " BUILD_SYSTEM_PROCESSOR;
+#  if defined(__GNUC__) && defined(__VERSION__)
+        stream << "; GCC " __VERSION__;
+#  endif
+        stream << ')';
+        return stream.str();
+#elif defined(__GNUC__) && defined(__VERSION__)
+        stream << " (GCC " __VERSION__ ")";
+        return stream.str();
+#else
+        return {};
+#endif
+    }
+    
+    crypto::ZeroFillString CURLRequest::generateUserAgent() {
+        crypto::ZeroFillStringStream stream;
+#if defined(PROJECT_NAME)
+        stream << PROJECT_NAME;
+#else
+        stream << "NGA";
+#endif
+        
+#if defined(CLIENT_VERSION_MAJOR) && defined(CLIENT_VERSION_MINOR) && defined(CLIENT_VERSION_PATCH)
+        stream << '/' << CLIENT_VERSION_MAJOR << '.' << CLIENT_VERSION_MINOR << '.' << CLIENT_VERSION_PATCH;
+#else
+        stream << "/0.0.1";
+#endif
+        
+        stream << CURLRequestUASystemInformation();
+        
+        auto * curlInfo = ::curl_version_info(CURLVERSION_NOW);
+        if (curlInfo) {
+            if (curlInfo->version) {
+                stream << ' ' << "cURL" << '/' << curlInfo->version;
+            }
+            if (curlInfo->ssl_version) {
+                stream << ' ' << curlInfo->ssl_version;
+            }
+        }
+        
+        return stream.str();
+    }
+    
 } // namespace nga

@@ -32,10 +32,6 @@ namespace kraken {
         
         if (init) {
             FixedStringStream<255> stream;
-            ScopeGuard guard([&] () {
-                stream.clear(true);
-            });
-            
             stream << "CREATE TABLE IF NOT EXISTS " << "orders" << "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
             << "pair" << " TEXT" << ','
             << "volume" << " TEXT" << ','
@@ -51,6 +47,16 @@ namespace kraken {
             << "clid" << " TEXT" << ','
             << "txid" << " TEXT" << ");";
             execute(stream);
+            
+            stream.clear();
+            stream << "CREATE INDEX IF NOT EXISTS " << "orders_id_index" << " ON " << "orders" << '('
+            << "id" << " ASC" << ");";
+            execute(stream);
+            
+            stream.clear();
+            stream << "CREATE INDEX IF NOT EXISTS " << "orders_crtts_index" << " ON " << "orders" << '('
+            << "crtts" << " ASC" << ");";
+            execute(stream);
         }
         
         return *this;
@@ -58,10 +64,6 @@ namespace kraken {
     
     std::vector<DBOrder> OrdersDB::selectFromCreateTimestamp(const int64_t fromTimestamp) {
         FixedStringStream<127> stream;
-        ScopeGuard guard([&] () {
-            stream.clear(true);
-        });
-        
         stream << "SELECT " << '*' << " FROM " << "orders" << " WHERE " << "crtts" << " >= ?;";
         
         auto stmt = prepare(stream);
@@ -78,16 +80,16 @@ namespace kraken {
             DBOrder order;
             order.id = ::sqlite3_column_int64(stmtPtr, 0); // 0=id
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 1))) ) { order.pair = OHLCPairFromKey(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 2))) ) { order.volume = decimal_t(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 3))) ) { order.price = decimal_t(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 4))) ) { order.cost = decimal_t(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 5))) ) { order.fee = decimal_t(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 2))) ) { order.volume = Decimal(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 3))) ) { order.price = Decimal(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 4))) ) { order.cost = Decimal(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 5))) ) { order.fee = Decimal(tmpText); }
             order.type = static_cast<OrderType>(::sqlite3_column_int(stmtPtr, 6));
             order.status = static_cast<OrderStatus>(::sqlite3_column_int(stmtPtr, 7));
             order.parentId = ::sqlite3_column_int64(stmtPtr, 8);
             order.createTimestamp = ::sqlite3_column_int64(stmtPtr, 9);
             order.updateTimestamp = ::sqlite3_column_int64(stmtPtr, 10);
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 11))) ) { order.openTimestamp = decimal_t(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 11))) ) { order.openTimestamp = Decimal(tmpText); }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 12))) ) { order.clientId = tmpText; }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 13))) ) { order.txId = tmpText; }
             orders.emplace_back(static_cast<DBOrder &&>(order));
@@ -106,10 +108,6 @@ namespace kraken {
     
     DBOrder OrdersDB::selectById(const int64_t orderId) {
         FixedStringStream<127> stream;
-        ScopeGuard guard([&] () {
-            stream.clear(true);
-        });
-        
         stream << "SELECT " << '*' << " FROM " << "orders" << " WHERE " << "id" << " = ?;";
         
         auto stmt = prepare(stream);
@@ -125,16 +123,16 @@ namespace kraken {
             const char * tmpText;
             order.id = ::sqlite3_column_int64(stmtPtr, 0); // 0=id
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 1))) ) { order.pair = OHLCPairFromKey(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 2))) ) { order.volume = decimal_t(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 3))) ) { order.price = decimal_t(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 4))) ) { order.cost = decimal_t(tmpText); }
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 5))) ) { order.fee = decimal_t(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 2))) ) { order.volume = Decimal(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 3))) ) { order.price = Decimal(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 4))) ) { order.cost = Decimal(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 5))) ) { order.fee = Decimal(tmpText); }
             order.type = static_cast<OrderType>(::sqlite3_column_int(stmtPtr, 6));
             order.status = static_cast<OrderStatus>(::sqlite3_column_int(stmtPtr, 7));
             order.parentId = ::sqlite3_column_int64(stmtPtr, 8);
             order.createTimestamp = ::sqlite3_column_int64(stmtPtr, 9);
             order.updateTimestamp = ::sqlite3_column_int64(stmtPtr, 10);
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 11))) ) { order.openTimestamp = decimal_t(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 11))) ) { order.openTimestamp = Decimal(tmpText); }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 12))) ) { order.clientId = tmpText; }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 13))) ) { order.txId = tmpText; }
             return order;
@@ -153,10 +151,6 @@ namespace kraken {
     
     int64_t OrdersDB::insert() {
         FixedStringStream<127> stream;
-        ScopeGuard guard([&] () {
-            stream.clear(true);
-        });
-        
         stream << "INSERT INTO " << "orders" << '(' << "crtts" << ") VALUES(" << '?' << ");";
         auto stmt = prepare(stream);
         if (::sqlite3_bind_int64(stmt.get(), 1, -1) != SQLITE_OK) {
@@ -168,10 +162,6 @@ namespace kraken {
     
     int64_t OrdersDB::insert(const DBOrder & order) {
         FixedStringStream<255> stream;
-        ScopeGuard guard([&] () {
-            stream.clear(true);
-        });
-        
         stream << "INSERT INTO " << "orders" << '('
         << "pair" << ','
         << "volume" << ','
@@ -223,10 +213,6 @@ namespace kraken {
     
     void OrdersDB::insertReplace(const DBOrder & order) {
         FixedStringStream<255> stream;
-        ScopeGuard guard([&] () {
-            stream.clear(true);
-        });
-        
         stream << "INSERT OR REPLACE INTO " << "orders" << '('
         << "id" << ','
         << "pair" << ','
@@ -279,10 +265,6 @@ namespace kraken {
     
     void OrdersDB::insertReplace(const std::vector<DBOrder> & orders) {
         FixedStringStream<255> stream;
-        ScopeGuard guard([&] () {
-            stream.clear(true);
-        });
-        
         stream << "INSERT OR REPLACE INTO " << "orders" << '('
         << "id" << ','
         << "pair" << ','

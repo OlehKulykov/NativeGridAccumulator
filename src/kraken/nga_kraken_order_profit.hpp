@@ -13,7 +13,7 @@
 #include <sstream>
 #include <ostream>
 
-#include "../core/nga_crypto.hpp"
+#include "../nga_types.hpp"
 
 #include "nga_kraken_types.hpp"
 
@@ -21,17 +21,17 @@ namespace nga {
 namespace kraken {
     
     struct NGA_CPP_CLASS_API OrderProfit final {
-        decimal_t volume{0};
-        decimal_t cost{0};
+        Decimal volume{0};
+        Decimal cost{0};
         OrderType from{0};
         OrderType to{0};
         
-        crypto::ZeroFillString description() const;
+        String description() const;
         
         OrderProfit() noexcept = default;
         
         template<typename T>
-        inline friend crypto::ZeroFillStringStream & operator << (crypto::ZeroFillStringStream & os, const OrderProfit & profit) {
+        inline friend StringStream & operator << (StringStream & os, const OrderProfit & profit) {
             os << profit.description();
             return os;
         }

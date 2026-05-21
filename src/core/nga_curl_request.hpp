@@ -12,7 +12,6 @@
 
 #include <memory>
 #include <vector>
-#include <stdexcept>
 
 #include "nga_crypto.hpp"
 
@@ -31,6 +30,8 @@ namespace nga {
                                                                 const void * NGA_NULLABLE postData = nullptr,
                                                                 const size_t postDataSize = 0,
                                                                 std::shared_ptr<crypto::ZeroFillDataVector> && responceData = nullptr);
+        
+        static crypto::ZeroFillString generateUserAgent();
         
         static void globalInit() noexcept;
         

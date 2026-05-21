@@ -11,13 +11,11 @@
 #define __NGA_KRAKEN_TYPES_HPP__ 1
 
 #include <limits>
-#include <map>
-#include <filesystem>
 
 #include "../core/nga_crypto.hpp"
+#include "../core/nga_pair.hpp"
+#include "../core/nga_trio.hpp"
 #include "../nga_types.hpp"
-
-#include <boost/decimal/decimal128_t.hpp>
 
 namespace nga {
 namespace kraken {
@@ -34,6 +32,30 @@ namespace kraken {
         res.timestamp = timestamp;
         return res;
     }
+    
+    enum class Token : uint8_t {
+        USDC    = 1,
+        ADA,
+        ATOM,
+        AVAX,
+        BNB,
+        BONK,
+        BTC,
+        DASH,
+        ETH,
+        EUR,
+        FLOKI,
+        LTC,
+        PEPE,
+        POL,
+        SOL,
+        TON,
+        TRX,
+        USD,
+        USDT
+    };
+    
+    NGA_CPP_API(const char * NGA_NONNULL) TokenToKey(const Token token) noexcept;
     
     enum class OHLCPair : uint8_t {
         USDC_EUR    = 1,
@@ -54,6 +76,9 @@ namespace kraken {
         TRX_USD
     };
     
+    typedef PairPOD<Token, Token> OHLCPairTokens;
+    
+    NGA_CPP_API(OHLCPairTokens) OHLCPairToTokens(const OHLCPair pair) noexcept;
     NGA_CPP_API(const char * NGA_NONNULL) OHLCPairToKey(const OHLCPair pair) noexcept;
     NGA_CPP_API(OHLCPair) OHLCPairFromKey(const char * NGA_NULLABLE key) noexcept;
     
@@ -65,33 +90,6 @@ namespace kraken {
     
     NGA_CPP_API(const char * NGA_NONNULL const) orderTypeBuy;
     NGA_CPP_API(const char * NGA_NONNULL const) orderTypeSell;
-    
-    typedef boost::decimal::decimal128_t decimal_t;
-    
-    struct OrderSettingsBase {
-        decimal_t sellVolumeRate{-1};
-        decimal_t sellCostRate{-1};
-        decimal_t buyVolumeRate{-1};
-        decimal_t buyCostRate{-1};
-        decimal_t step{-1};
-        uint32_t pairDecimals{0};
-        uint32_t lotDecimals{0};
-        
-        OrderSettingsBase & operator = (const OrderSettingsBase &) = delete;
-        OrderSettingsBase(const OrderSettingsBase &) = delete;
-        
-        OrderSettingsBase & operator = (OrderSettingsBase &&) noexcept = default;
-        OrderSettingsBase(OrderSettingsBase &&) noexcept = default;
-        OrderSettingsBase() noexcept = default;
-    };
-    
-    struct Config final {
-        crypto::ZeroFillString apiKey;
-        crypto::ZeroFillString privateKey;
-        std::map<OHLCPair, OrderSettingsBase> orderSettings;
-        std::filesystem::path ordersBD;
-        std::pair<uint32_t, uint32_t> checkOrdersTicks;
-    };
     
 } // namespace kraken
 } // namespace nga

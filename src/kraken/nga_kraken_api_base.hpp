@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <cstdarg>
 
+#include "../nga_types.hpp"
 #include "../core/nga_reusable.hpp"
 #include "../core/nga_crypto.hpp"
 #include "../core/nga_curl_request.hpp"
@@ -26,14 +27,14 @@
 namespace nga {
 namespace kraken {
     
-    class NGA_CPP_CLASS_API APIBase : public CURLRequest {
+    class NGA_CPP_CLASS_API APIBase : protected CURLRequest {
     private:
-        typedef std::array<crypto::ZeroFillString, 5> DefaultHeaders;
+        typedef std::array<String, 5> DefaultHeaders;
         typedef std::array<const char *, 5> PublicHeaders;
         typedef std::array<const char *, 7> PrivateHeaders;
         
-        crypto::ZeroFillString _aKey;
-        crypto::ZeroFillDataVector _pKey;
+        String _aKey;
+        DataVector _pKey;
         DefaultHeaders _defaultHeaders;
         
         PublicHeaders publicHeaders() const;
@@ -41,20 +42,19 @@ namespace kraken {
         
         static uint64_t nonceValue();
         static DefaultHeaders generateHeaders();
-        static crypto::ZeroFillString generateUserAgent();
         
     protected:
         NGA_REQUIRES_LAST_NULL_ARG
-        std::shared_ptr<crypto::ZeroFillDataVector> requestPublic(const char * NGA_NONNULL method,
-                                                                  std::shared_ptr<crypto::ZeroFillDataVector> && reusable = nullptr,
-                                                                  const char * NGA_NULLABLE firstQueryArg = nullptr, ...);
+        std::shared_ptr<DataVector> requestPublic(const char * NGA_NONNULL method,
+                                                  std::shared_ptr<DataVector> && reusable = nullptr,
+                                                  const char * NGA_NULLABLE firstQueryArg = nullptr, ...);
         
         NGA_REQUIRES_LAST_NULL_ARG
-        std::shared_ptr<crypto::ZeroFillDataVector> requestPrivate(const char * NGA_NONNULL method,
-                                                                   std::shared_ptr<crypto::ZeroFillDataVector> && reusable = nullptr,
-                                                                   const char * NGA_NULLABLE firstPostArg = nullptr, ...);
+        std::shared_ptr<DataVector> requestPrivate(const char * NGA_NONNULL method,
+                                                   std::shared_ptr<DataVector> && reusable = nullptr,
+                                                   const char * NGA_NULLABLE firstPostArg = nullptr, ...);
     public:
-        APIBase(crypto::ZeroFillString && apiKey, crypto::ZeroFillString && privateKey);
+        APIBase(String && apiKey, String && privateKey);
         APIBase();
         ~APIBase() noexcept = default;
     };

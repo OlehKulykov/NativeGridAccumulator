@@ -20,7 +20,7 @@ namespace kraken {
     
     struct Order;
     struct OrderProfit;
-    typedef Trio<decimal_t, decimal_t, decimal_t> NextInfo;
+    typedef Trio<Decimal, Decimal, Decimal> NextInfo;
     
     class NGA_CPP_CLASS_API ICalc {
     public:
@@ -28,7 +28,7 @@ namespace kraken {
         
         virtual OrderProfit expectedProfit(const Order &, const Order &) const noexcept = 0;
         
-        virtual NextInfo nextInfo(const decimal_t, const decimal_t, const decimal_t, const decimal_t) const noexcept = 0;
+        virtual NextInfo nextInfo(const Decimal, const Decimal, const Decimal, const Decimal) const noexcept = 0;
         
         virtual ~ICalc() noexcept = default;
     };

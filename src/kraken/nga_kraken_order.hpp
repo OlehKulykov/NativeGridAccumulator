@@ -13,6 +13,7 @@
 #include <ostream>
 #include <sstream>
 
+#include "../nga_types.hpp"
 #include "../core/nga_crypto.hpp"
 
 #include "nga_kraken_order_profit.hpp"
@@ -23,18 +24,18 @@ namespace nga {
 namespace kraken {
     
     struct NGA_CPP_CLASS_API Order {
-        crypto::ZeroFillString txId;
-        crypto::ZeroFillString clientId;
-        decimal_t volume{-1};
-        decimal_t cost{-1};
-        decimal_t fee{-1};
-        decimal_t price{-1};
-        decimal_t openTimestamp{-1}; // Unix timestamp of when order was placed
+        String txId;
+        String clientId;
+        Decimal volume{-1};
+        Decimal cost{-1};
+        Decimal fee{-1};
+        Decimal price{-1};
+        Decimal openTimestamp{-1}; // Unix timestamp of when order was placed
         OrderStatus status{0};
         OrderType type{0};
         OHLCPair pair{0};
         
-        inline const crypto::ZeroFillString & clOrTxId() const noexcept { return clientId.empty() ? txId : clientId; }
+        inline const String & clOrTxId() const noexcept { return clientId.empty() ? txId : clientId; }
         
         Order & operator = (const Order &) = delete;
         Order(const Order &) = delete;
@@ -44,13 +45,13 @@ namespace kraken {
         Order() noexcept = default;
         
         template<typename T>
-        static crypto::ZeroFillStringStream description(const T & order);
+        static StringStream description(const T & order);
         
         template<typename T>
         static T copy(const T & order);
         
         template<typename T>
-        inline friend crypto::ZeroFillStringStream & operator << (crypto::ZeroFillStringStream & os, const T & order) {
+        inline friend StringStream & operator << (StringStream & os, const T & order) {
             os << Order::description(order).str();
             return os;
         }

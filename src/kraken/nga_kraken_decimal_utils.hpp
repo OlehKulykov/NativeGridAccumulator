@@ -24,7 +24,7 @@ namespace kraken {
     
     constexpr const size_t maxDecimalCStringLen = 256;
     
-    inline void decimalToCString(const decimal_t decNum,
+    inline void decimalToCString(const Decimal decNum,
                                  char * cStr,
                                  const size_t cStrSize = maxDecimalCStringLen,
                                  const int precision = 32) {

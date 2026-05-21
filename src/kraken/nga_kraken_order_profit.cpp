@@ -16,9 +16,9 @@
 namespace nga {
 namespace kraken {
     
-    crypto::ZeroFillString OrderProfit::description() const {
+    String OrderProfit::description() const {
         char tmpStr[maxDecimalCStringLen];
-        crypto::ZeroFillStringStream stream;
+        StringStream stream;
         
         stream << OrderTypeToKey(from) << " > " << OrderTypeToKey(to);
         

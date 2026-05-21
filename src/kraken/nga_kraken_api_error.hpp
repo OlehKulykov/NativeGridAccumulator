@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "../core/nga_crypto.hpp"
+#include "../nga_types.hpp"
 
 namespace nga {
 namespace kraken {
@@ -36,8 +36,8 @@ namespace kraken {
     
     class NGA_CPP_CLASS_API APIError final : public std::runtime_error {
     private:
-        crypto::ZeroFillString _what;
-        crypto::ZeroFillString _description;
+        String _what;
+        String _description;
         APIErrorSeverity _severity{0};
         APIErrorCategory _category{0};
         

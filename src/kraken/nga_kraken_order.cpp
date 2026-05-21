@@ -37,9 +37,9 @@ namespace kraken {
     }
     
     template<>
-    crypto::ZeroFillStringStream Order::description(const Order & order) {
+    StringStream Order::description(const Order & order) {
         char tmpStr[maxDecimalCStringLen];
-        crypto::ZeroFillStringStream stream;
+        StringStream stream;
         
         stream << OHLCPairToKey(order.pair)
         << ", " << OrderTypeToKey(order.type);
