@@ -9,6 +9,7 @@
 
 #include <stdexcept>
 #include <limits>
+#include <format>
 #include <cstring>
 
 #include "core/nga_file_utils.hpp"
@@ -22,25 +23,30 @@
 
 namespace nga {
     
-    std::shared_ptr<kraken::Config> ConfigParseKraken(const RAPIDJSON_NAMESPACE::Value & kraken) {
+    static std::pair<uint32_t, uint32_t> ConfigParseTicks(const RAPIDJSON_NAMESPACE::Value & object, const char * key) {
         using namespace RAPIDJSON_NAMESPACE;
         
-        auto config = std::make_shared<kraken::Config>();
-        
-        config->apiKey = findString<String>(kraken, "api-key", emptyCString);
-        config->privateKey = findString<String>(kraken, "private-key", emptyCString);
-        config->ordersBD = findString<std::filesystem::path>(kraken, "orders-db-file");
-        
-        auto & array = findArray(kraken, "check-orders-tick-range", emptyArrayValue);
+        auto & array = findArray(object, key, emptyArrayValue);
         if ((array.Size() > 1) && (array[0].IsUint()) && (array[1].IsUint())) {
             const auto elem0 = array[0].Get<unsigned>();
             const auto elem1 = array[1].Get<unsigned>();
-            
-            config->checkOrdersTicks.first = std::min(elem0, elem1);
-            config->checkOrdersTicks.second = std::max(elem0, elem1);
-        } else {
-            config->checkOrdersTicks.first = config->checkOrdersTicks.second = 0;
+            return { std::min(elem0, elem1), std::max(elem0, elem1) };
         }
+        
+        return {0, 0};
+    }
+    
+    static kraken::Config ConfigParseKraken(const RAPIDJSON_NAMESPACE::Value & kraken) {
+        using namespace RAPIDJSON_NAMESPACE;
+        
+        kraken::Config config;
+        
+        config.apiKey = findString<String>(kraken, "api-key", emptyCString);
+        config.privateKey = findString<String>(kraken, "private-key", emptyCString);
+        config.ordersBD = findString<std::filesystem::path>(kraken, "orders-db-file");
+        config.checkOrdersTicks = ConfigParseTicks(kraken, "check-orders-tick-range");
+        config.updateAskBidTicks = ConfigParseTicks(kraken, "update-ask-bid-tick-range");
+        config.updateOrdersInfoTicks = ConfigParseTicks(kraken, "update-orders-info-tick-range");
         
         auto & object = findObject(kraken, "order-settings", emptyObjectValue);
         for (auto it = object.MemberBegin(); it != object.MemberEnd(); ++it) {
@@ -56,59 +62,37 @@ namespace nga {
             settings.buyVolumeRate = findString<Decimal>(it->value, "buy-volume-rate");
             settings.buyCostRate = findString<Decimal>(it->value, "buy-cost-rate");
             settings.step = findString<Decimal>(it->value, "price-step");
+            settings.fee = findString<Decimal>(it->value, "fee");
             settings.pairDecimals = findNumber<unsigned>(it->value, "pair-decimals");
             settings.lotDecimals = findNumber<unsigned>(it->value, "lot-decimals");
             settings.enabled = findBool(it->value, "enabled");
             
-            config->orderSettings[pair] = std::move(settings);
+            config.orderSettings[pair] = std::move(settings);
         }
         
         return config;
     }
     
-    std::shared_ptr<telegram::Config> ConfigParseTelegram(const RAPIDJSON_NAMESPACE::Value & telegram) {
+    static telegram::Config ConfigParseTelegram(const RAPIDJSON_NAMESPACE::Value & telegram) {
         using namespace RAPIDJSON_NAMESPACE;
         
-        auto config = std::make_shared<telegram::Config>();
+        telegram::Config config;
         
         auto aKey = findString<String>(telegram, "api-key", emptyCString);
         auto chatId = findString<String>(telegram, "chat-id", emptyCString);
         if (aKey.size() && chatId.size()) {
-            config->apiKey = std::move(aKey);
-            config->chatId = std::move(chatId);
+            config.apiKey = std::move(aKey);
+            config.chatId = std::move(chatId);
         }
         
         return config;
-    }
-    
-    std::filesystem::path Config::path() const {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        return _path;
-    }
-    
-    std::shared_ptr<kraken::Config> Config::krakenConfig() const {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        return _krakenConfig;
-    }
-    
-    std::shared_ptr<telegram::Config> Config::telegramConfig() const {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        return _telegramConfig;
-    }
-    
-    std::filesystem::path Config::logFilePath() const {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        return _logFilePath;
     }
     
     void Config::load(const char * NGA_NONNULL path) {
         using namespace RAPIDJSON_NAMESPACE;
         
-        const std::lock_guard<std::mutex> lock(_mutex);
-        _clear();
-        
         if (!path) {
-            throw std::invalid_argument("Config path is null");
+            throw std::invalid_argument("Config: path is null");
         }
         
         auto content = file::readContent(path);
@@ -117,56 +101,21 @@ namespace nga {
         doc.ParseInsitu<kParseStopWhenDoneFlag | kParseCommentsFlag | kParseTrailingCommasFlag>(reinterpret_cast<char *>(content.data()));
         
         if (doc.HasParseError()) {
-            char reason[256];
-            ::snprintf(reason, 256, "Config parse error: \'%s\', offset: %" PRIu64,
-                       GetParseError_En(doc.GetParseError()) ?: "Unknown",
-                       static_cast<uint64_t>(doc.GetErrorOffset()));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("Config: parse error: \'{}\', offset: {}", GetParseError_En(doc.GetParseError()), doc.GetErrorOffset()));
         }
         
-        try {
-            _path = path;
-            _logFilePath = findString<std::filesystem::path>(doc, "log-file");
-            
-            const auto & kraken = findObject(doc, "kraken", emptyObjectValue);
-            if (!kraken.ObjectEmpty()) {
-                _krakenConfig = ConfigParseKraken(kraken);
-            }
-            
-            const auto & telegram = findObject(doc, "telegram", emptyObjectValue);
-            if (!telegram.ObjectEmpty()) {
-                _telegramConfig = ConfigParseTelegram(telegram);
-            }
-        } catch (...) {
-            _clear();
-            throw;
+        _path = path;
+        _logFilePath = findString<std::filesystem::path>(doc, "log-file");
+        
+        const auto & kraken = findObject(doc, "kraken", emptyObjectValue);
+        if (!kraken.ObjectEmpty()) {
+            _krakenConfig = ConfigParseKraken(kraken);
         }
-    }
-    
-    void Config::_clear() noexcept {
-        _krakenConfig.reset();
-        _telegramConfig.reset();
-        _path.clear();
-        _logFilePath.clear();
-    }
-    
-    void Config::clearKraken() {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        _krakenConfig.reset();
-    }
-    
-    void Config::clearTelegram() {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        _telegramConfig.reset();
-    }
-    
-    void Config::clear() {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        _clear();
-    }
-    
-    Config::~Config() noexcept {
-        _clear();
+        
+        const auto & telegram = findObject(doc, "telegram", emptyObjectValue);
+        if (!telegram.ObjectEmpty()) {
+            _telegramConfig = ConfigParseTelegram(telegram);
+        }
     }
     
 } // namespace nga

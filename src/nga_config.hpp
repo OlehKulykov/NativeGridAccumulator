@@ -20,38 +20,28 @@
 
 #include "kraken/nga_kraken_config.hpp"
 #include "telegram/nga_telegram_config.hpp"
+#include "core/nga_trio.hpp"
 
 namespace nga {
     
     class Config final {
     private:
-        mutable std::mutex _mutex;
-        mutable std::shared_ptr<kraken::Config> _krakenConfig;
-        mutable std::shared_ptr<telegram::Config> _telegramConfig;
+        kraken::Config _krakenConfig;
+        telegram::Config _telegramConfig;
         std::filesystem::path _path;
         std::filesystem::path _logFilePath;
         
-        void _clear() noexcept;
-        
     public:
-        std::filesystem::path path() const;
+        const std::filesystem::path & path() const noexcept { return _path; }
+        const std::filesystem::path & logFilePath() const noexcept { return _logFilePath; }
         
-        std::shared_ptr<kraken::Config> krakenConfig() const;
-        
-        std::shared_ptr<telegram::Config> telegramConfig() const;
-        
-        std::filesystem::path logFilePath() const;
+        kraken::Config & krakenConfig() noexcept { return _krakenConfig; };
+        telegram::Config & telegramConfig() noexcept { return _telegramConfig; };
         
         void load(const char * NGA_NONNULL path);
         
-        void clearKraken();
-        
-        void clearTelegram();
-        
-        void clear();
-        
         Config() noexcept = default;
-        ~Config() noexcept;
+        ~Config() noexcept = default;
     };
     
 } // namespace nga

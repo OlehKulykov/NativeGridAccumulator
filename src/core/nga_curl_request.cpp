@@ -8,6 +8,7 @@
  */
 
 #include <stdexcept>
+#include <format>
 #include <atomic>
 #include <algorithm>
 #include <cstddef>
@@ -20,8 +21,9 @@
 
 #include <curl/curl.h>
 
-#if defined(HAVE_SYS_UTSNAME_H) || __has_include(<sys/utsname.h>)
+#if __has_include(<sys/utsname.h>)
 #  include <sys/utsname.h>
+#  define HAVE_SYS_UTSNAME_H 1
 #endif
 
 #include "nga_curl_request.hpp"
@@ -79,8 +81,6 @@ namespace nga {
     static CURLBaseRequest CURLRequestCreateBaseRequest(const char * NGA_NONNULL url,
                                                         const char * NGA_NULLABLE * NGA_NULLABLE headers,
                                                         const size_t headersCount) {
-        FixedStringStream<255> stream;
-        
         ///@link https://curl.se/libcurl/c/httpcustomheader.html
         CURLSListUPtr headersSList;
         {
@@ -97,8 +97,7 @@ namespace nga {
                     if (prevList) {
                         ::curl_slist_free_all(prevList);
                     }
-                    stream << "Set headers";
-                    throw std::runtime_error(stream);
+                    throw std::runtime_error("cURL: append headers");
                 }
             }
             headersSList = CURLSListUPtr(prevList);
@@ -106,39 +105,32 @@ namespace nga {
         
         CURLUPtr curl(::curl_easy_init());
         if (!curl) {
-            stream << "GET init";
-            throw std::runtime_error(stream);
+            throw std::runtime_error("cURL: GET init");
         }
         
         CURLcode res;
         if (headersSList && ((res = curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headersSList.get())) != CURLE_OK) ) {
-            stream << "Set headers: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set headers: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = curl_easy_setopt(curl.get(), CURLOPT_URL, url)) != CURLE_OK ) {
-            stream << "URL: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set URL: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, 30)) != CURLE_OK ) {
-            stream << "Timeout: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set timeout: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 1L)) != CURLE_OK ) {
-            stream << "SSL verify peer: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set SSL verify peer: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYHOST, 2L)) != CURLE_OK ) {
-            stream << "SSL verify host: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set SSL verify host: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, CURLRequestWriteDataCallback)) != CURLE_OK ) {
-            stream << "Set write: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set write: {}", ::curl_easy_strerror(res)));
         }
         
         return CURLBaseRequest(static_cast<CURLUPtr &&>(curl), static_cast<CURLSListUPtr &&>(headersSList));
@@ -162,16 +154,13 @@ namespace nga {
             movedData = std::make_shared<crypto::ZeroFillDataVector>();
         }
         
-        FixedStringStream<255> stream;
         CURLcode res;
         if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_WRITEDATA, movedData.get())) != CURLE_OK ) {
-            stream << "Write data: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: write data: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = ::curl_easy_perform(base.first.get())) != CURLE_OK ) {
-            stream << "Perform: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: perform: {}", ::curl_easy_strerror(res)));
         }
         
         return movedData;
@@ -190,11 +179,9 @@ namespace nga {
         
         auto base = CURLRequestCreateBaseRequest(url, headers, headersCount);
         
-        FixedStringStream<255> stream;
         CURLcode res;
         if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_POST, 1L)) != CURLE_OK ) {
-            stream << "Set POST: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set POST: {}", ::curl_easy_strerror(res)));
         }
         
         TrioPOD<const char *, size_t, size_t> readDataUser;
@@ -204,13 +191,11 @@ namespace nga {
             readDataUser.third = 0;
             
             if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_READFUNCTION, CURLRequestReadDataCallback)) != CURLE_OK ) {
-                stream << "Read function: " << ::curl_easy_strerror(res);
-                throw std::runtime_error(stream);
+                throw std::runtime_error(std::format("cURL: set read function: {}", ::curl_easy_strerror(res)));
             }
             
             if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_READDATA, static_cast<void *>(&readDataUser))) != CURLE_OK ) {
-                stream << "Read data: " << ::curl_easy_strerror(res);
-                throw std::runtime_error(stream);
+                throw std::runtime_error(std::format("cURL: set read data: {}", ::curl_easy_strerror(res)));
             }
         }
         
@@ -222,13 +207,11 @@ namespace nga {
         }
         
         if ( (res = curl_easy_setopt(base.first.get(), CURLOPT_WRITEDATA, movedData.get())) != CURLE_OK ) {
-            stream << "Write data: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: set write data: {}", ::curl_easy_strerror(res)));
         }
         
         if ( (res = ::curl_easy_perform(base.first.get())) != CURLE_OK ) {
-            stream << "Perform: " << ::curl_easy_strerror(res);
-            throw std::runtime_error(stream);
+            throw std::runtime_error(std::format("cURL: perform: {}", ::curl_easy_strerror(res)));
         }
         
         return movedData;
@@ -260,7 +243,7 @@ namespace nga {
     ///@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/User-Agent
     static crypto::ZeroFillString CURLRequestUASystemInformation() {
         crypto::ZeroFillStringStream stream;
-#if defined(HAVE_SYS_UTSNAME_H) || __has_include(<sys/utsname.h>)
+#if defined(HAVE_SYS_UTSNAME_H)
         struct utsname systemInfo;
         if (::uname(&systemInfo) == 0) {
             stream << " (" << systemInfo.sysname << ' ' << systemInfo.release << "; " << systemInfo.machine;

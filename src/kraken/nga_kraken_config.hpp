@@ -26,8 +26,10 @@ namespace kraken {
         std::map<OHLCPair, OrderSettingsBase> orderSettings;
         std::filesystem::path ordersBD;
         std::pair<uint32_t, uint32_t> checkOrdersTicks;
+        std::pair<uint32_t, uint32_t> updateAskBidTicks;
+        std::pair<uint32_t, uint32_t> updateOrdersInfoTicks;
     };
-        
+    
 } // namespace kraken
 } // namespace nga
 

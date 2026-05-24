@@ -8,6 +8,7 @@
  */
 
 #include <stdexcept>
+#include <format>
 #include <cstdio>
 
 #include "nga_fixed_string_stream.hpp"
@@ -39,14 +40,12 @@ namespace nga {
         sqlite3 * dbPtr = nullptr;
         const int res = ::sqlite3_open_v2(path, &dbPtr, flags, nullptr);
         if (!dbPtr) {
-            throw std::runtime_error("SQLite open db");
+            throw std::runtime_error("SQLite: open db");
         }
         db.reset(dbPtr);
         
         if (res != SQLITE_OK) {
-            char reason[256];
-            ::snprintf(reason, 256, "SQLite open db, result: %i, error: %s", res, (::sqlite3_errmsg(db.get()) ?: emptyCString));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("SQLite: open db result: {}, error: {}", res, (::sqlite3_errmsg(db.get()) ?: emptyCString)));
         }
         
         _db = static_cast<DBUPtr &&>(db);
@@ -57,9 +56,7 @@ namespace nga {
         const int res = ::sqlite3_prepare_v3(_db.get(), sql, -1, 0, &stmtPtr, nullptr);
         StmtUPtr stmt(stmtPtr);
         if (!stmtPtr || (res != SQLITE_OK)) {
-            char reason[256];
-            ::snprintf(reason, 256, "SQLite prepare statement, result: %i, error: %s", res, (::sqlite3_errmsg(_db.get()) ?: emptyCString));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("SQLite: prepare statement result: {}, error: {}", res, (::sqlite3_errmsg(_db.get()) ?: emptyCString)));
         }
         return stmt;
     }
@@ -74,9 +71,7 @@ namespace nga {
         
         if (res != SQLITE_OK) {
             // SQLITE_CONSTRAINT: record already exists
-            char reason[256];
-            ::snprintf(reason, 256, "SQLite step, result: %i, error: %s", res, (::sqlite3_errmsg(_db.get()) ?: emptyCString));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("SQLite: step result: {}, error: {}", res, (::sqlite3_errmsg(_db.get()) ?: emptyCString)));
         }
         
         return res;
@@ -88,9 +83,7 @@ namespace nga {
             res = ::sqlite3_clear_bindings(stmt.get());
         }
         if (res != SQLITE_OK) {
-            char reason[256];
-            ::snprintf(reason, 256, "SQLite reuse statement, result: %i, error: %s", res, (::sqlite3_errmsg(_db.get()) ?: emptyCString));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("SQLite: reuse statement result: {}, error: {}", res, (::sqlite3_errmsg(_db.get()) ?: emptyCString)));
         }
     }
     
@@ -98,9 +91,7 @@ namespace nga {
         char * errMsg = nullptr;
         const int res = ::sqlite3_exec(_db.get(), sql, nullptr, nullptr, &errMsg);
         if (res != SQLITE_OK) {
-            char reason[256];
-            ::snprintf(reason, 256, "SQLite execute, result: %i, error: %s", res, (errMsg ?: emptyCString));
-            std::runtime_error exception(reason);
+            std::runtime_error exception(std::format("SQLite: execute result: {}, error: {}", res, (errMsg ?: emptyCString)));
             if (errMsg) {
                 ::sqlite3_free(errMsg);
             }

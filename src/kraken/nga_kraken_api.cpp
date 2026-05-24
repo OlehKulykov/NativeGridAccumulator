@@ -8,6 +8,7 @@
  */
 
 #include <stdexcept>
+#include <format>
 
 #include "../core/nga_scope_guard.hpp"
 #include "../core/nga_randomizer.hpp"
@@ -45,9 +46,7 @@ namespace kraken {
             }
         }
         
-        char reason[256];
-        ::snprintf(reason, 256, "API: open order not found, clientId: %s", clOrdId);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("API: open order not found, clientId: {}", clOrdId));
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/get-open-orders
@@ -87,9 +86,7 @@ namespace kraken {
             }
         }
         
-        char reason[256];
-        ::snprintf(reason, 256, "API: closed order not found, clientId: %s", clOrdId);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("API: closed order not found, clientId: {}", clOrdId));
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/get-closed-orders
@@ -231,9 +228,7 @@ namespace kraken {
         Document doc;
         doc.ParseInsitu<kParseStopWhenDoneFlag | kParseCommentsFlag | kParseTrailingCommasFlag>(reinterpret_cast<char *>(jsonData));
         if (doc.HasParseError()) {
-            char reason[256];
-            ::snprintf(reason, 256, "API: document parse error: \'%s\', offset: %" PRIu64, GetParseError_En(doc.GetParseError()) ?: "Unknown", static_cast<uint64_t>(doc.GetErrorOffset()));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("API: document parse error: \'{}\', offset: {}", GetParseError_En(doc.GetParseError()) ?: "Unknown", doc.GetErrorOffset()));
         }
         if (!doc.IsObject()) {
             throw std::runtime_error("API: document not an object");

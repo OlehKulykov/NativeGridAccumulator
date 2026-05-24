@@ -11,11 +11,13 @@
 #define __NGA_RAPIDJSON_HPP__ 1
 
 #include <stdexcept>
+#include <format>
 #include <cstdio>
 
 #define RAPIDJSON_NAMESPACE ngarj
 #define RAPIDJSON_NO_SIZETYPEDEFINE 1
 #define RAPIDJSON_HAS_STDSTRING 1
+#define RAPIDJSON_HAS_CXX11 1
 #define RAPIDJSON_HAS_CXX11_RVALUE_REFS 1
 #define RAPIDJSON_HAS_CXX11_NOEXCEPT 1
 
@@ -23,6 +25,7 @@ namespace RAPIDJSON_NAMESPACE {
     typedef ::size_t SizeType;
 }
 
+#include <rapidjson/rapidjson.h>
 #include <rapidjson/document.h>
 
 #include "nga_c_string.h"
@@ -60,9 +63,7 @@ namespace RAPIDJSON_NAMESPACE {
         if (it != obj.MemberEnd() && it->value.IsNumber()) {
             return it->value.Get<T>();
         }
-        char reason[128];
-        ::snprintf(reason, 128, "Number not found %s", key);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("JSON: number not found {}", key));
     }
     
     template<typename T>

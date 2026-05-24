@@ -27,22 +27,6 @@ namespace nga {
     typedef std::pair<Decimal, Decimal>     AskBid;
     typedef Trio<Decimal, Decimal, Decimal> AskBidIndex;
     
-    enum class Trend : uint8_t {
-        none    = 0,
-        up      = 1,
-        down    = 2,
-        flat    = 3
-    };
-    
-    enum TimeDuration : time_t {
-        TimeDuration_1minute    = 60,
-        TimeDuration_1hour      = 3600,
-        TimeDuration_1day       = 86400,
-        TimeDuration_1week      = 604800,
-        TimeDuration_1month     = 2629743,
-        TimeDuration_1year      = 31556926
-    };
-    
     enum class OrderStatus : uint8_t {
         open        = 1,
         closed      = 2,

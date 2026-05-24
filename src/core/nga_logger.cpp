@@ -8,6 +8,7 @@
  */
 
 #include <memory>
+#include <format>
 #include <cstring>
 #include <climits>
 #include <ctime>
@@ -87,9 +88,7 @@ namespace nga {
             if (fd >= 0) {
                 ::close(fd);
             }
-            char reason[128];
-            ::snprintf(reason, 128, "Invalid file descriptor: %i", fd);
-            throw std::invalid_argument(reason);
+            throw std::invalid_argument(std::format("Logger: invalid file descriptor: {}", fd));
         }
     }
     
@@ -97,27 +96,16 @@ namespace nga {
         const std::lock_guard<std::mutex> lock(_mutex);
         _close();
         if (!path) {
-            throw std::invalid_argument("Logger path is null");
+            throw std::invalid_argument("Logger: path is null");
         }
         int fd;
         if ( (fd = ::open(path, static_cast<int>(O_WRONLY))) >= 0 ) {
             if (::lseek(fd, 0, SEEK_END) < 0) {
                 ::close(fd);
-                char reason[128];
-                ::snprintf(reason, 128, "Invalid file descriptor: %i", fd);
-                throw std::invalid_argument(reason);
+                throw std::invalid_argument(std::format("Logger: invalid file descriptor: {}", fd));
             }
         } else if ( (fd = ::open(path, static_cast<int>(O_WRONLY | O_CREAT), static_cast<mode_t>(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH))) < 0 ) {
-            char errDescr[64];
-            errDescr[0] = 0;
-            const int errNo = errno;
-            if (errNo != 0) {
-                const auto seRes = ::strerror_r(errNo, errDescr, 64);
-                (void)seRes;
-            }
-            char reason[256];
-            ::snprintf(reason, 256, "Open file: %s, errno: %i, descr: %s", path, errNo, errDescr);
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("Logger: open file: {}, errno: {} ({})", path, errno, ::strerror(errno)));
         }
         _fd = fd;
     }

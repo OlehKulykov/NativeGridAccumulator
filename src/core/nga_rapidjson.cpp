@@ -11,8 +11,6 @@
 
 #include "nga_rapidjson.hpp"
 
-#include <rapidjson/document.h>
-
 namespace RAPIDJSON_NAMESPACE {
     
     const Value emptyArrayValue(kArrayType);
@@ -23,9 +21,7 @@ namespace RAPIDJSON_NAMESPACE {
         if (it != obj.MemberEnd() && it->value.IsString()) {
             return it->value.GetString() ?: emptyCString;
         }
-        char reason[128];
-        ::snprintf(reason, 128, "String not found: %s", key);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("JSON: string not found: {}", key));
     }
     
     const char * NGA_NONNULL findCString(const Value & obj,
@@ -43,9 +39,7 @@ namespace RAPIDJSON_NAMESPACE {
         if (it != obj.MemberEnd() && it->value.IsArray()) {
             return it->value;
         }
-        char reason[128];
-        ::snprintf(reason, 128, "Array not found: %s", key);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("JSON: array not found: {}", key));
     }
     
     const Value & findArray(const Value & obj, const char * NGA_NONNULL key, const Value & defValue) noexcept {
@@ -61,9 +55,7 @@ namespace RAPIDJSON_NAMESPACE {
         if (it != obj.MemberEnd() && it->value.IsObject()) {
             return it->value;
         }
-        char reason[128];
-        ::snprintf(reason, 128, "Object not found: %s", key);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("JSON: object not found: {}", key));
     }
     
     const Value & findObject(const Value & obj, const char * NGA_NONNULL key, const Value & defValue) noexcept {
@@ -79,9 +71,7 @@ namespace RAPIDJSON_NAMESPACE {
         if (it != obj.MemberEnd() && it->value.IsBool()) {
             return it->value.GetBool();
         }
-        char reason[128];
-        ::snprintf(reason, 128, "Boolean not found: %s", key);
-        throw std::runtime_error(reason);
+        throw std::runtime_error(std::format("JSON: boolean not found: {}", key));
     }
     
     bool findBool(const Value & obj, const char * NGA_NONNULL key, const bool defValue) noexcept {

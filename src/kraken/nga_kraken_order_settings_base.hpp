@@ -23,18 +23,12 @@ namespace kraken {
         Decimal buyVolumeRate{-1};
         Decimal buyCostRate{-1};
         Decimal step{-1};
+        Decimal fee{-1};
         uint32_t pairDecimals{0};
         uint32_t lotDecimals{0};
         bool enabled{false};
-        
-        OrderSettingsBase & operator = (const OrderSettingsBase &) = delete;
-        OrderSettingsBase(const OrderSettingsBase &) = delete;
-        
-        OrderSettingsBase & operator = (OrderSettingsBase &&) noexcept = default;
-        OrderSettingsBase(OrderSettingsBase &&) noexcept = default;
-        OrderSettingsBase() noexcept = default;
     };
-        
+    
 } // namespace kraken
 } // namespace nga
 

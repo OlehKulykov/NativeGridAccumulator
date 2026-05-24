@@ -9,13 +9,13 @@ cmake_minimum_required(VERSION 3.31)
 
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
-set(CLIENT_VERSION_MINOR 12)
-set(CLIENT_VERSION_PATCH 16)
+set(CLIENT_VERSION_MINOR 14)
+set(CLIENT_VERSION_PATCH 0)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
 
-set(NGA_DAEMON_NAME ngad)
+set(NGA_DAEMON_NAME nga-d)
 
 set(PACKAGE_URL "https://github.com/OlehKulykov/NativeGridAccumulator")
 set(PACKAGE_BUGREPORT "https://github.com/OlehKulykov/NativeGridAccumulator")
@@ -44,8 +44,6 @@ if (APPLE)
   set(CMAKE_OBJCXX_STANDARD 17)
 endif()
 
-set(NGA_APP nativegridaccumulator)
-
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
@@ -63,10 +61,7 @@ endif()
 # ------ Options, consts ------
 option(OPT_DEPS_PATH "Deps path")
 option(OPT_BUILD_NUM "CI build number" 0)
-option(OPT_WITH_SYSTEM_LIBUV "Using installed libuv" OFF)
-option(OPT_WITH_SYSTEM_CURL "Using installed cURL" OFF)
-option(OPT_WITH_SYSTEM_BOOST "Using installed Boost" OFF)
-option(OPT_WITH_SYSTEM_SQLITE "Using installed SQlite" OFF)
+option(OPT_OUTPUT "Enable console output: std::cout, printf, etc." OFF)
 option(OPT_WARNINGS_CXX "Enable C++ warnings." OFF)
 
 if (OPT_BUILD_NUM)
@@ -91,7 +86,28 @@ endif()
 string(TOLOWER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWER)
 string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} CMAKE_SYSTEM_PROCESSOR_LOWER)
 
+execute_process(COMMAND git rev-parse --abbrev-ref HEAD
+  OUTPUT_VARIABLE BUILD_GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+execute_process(COMMAND git rev-parse --short HEAD
+  OUTPUT_VARIABLE BUILD_GIT_COMMIT_SHORT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+execute_process(COMMAND git rev-parse HEAD
+  OUTPUT_VARIABLE BUILD_GIT_COMMIT_FULL
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
 message("-- PROJECT_NAME:             ${PROJECT_NAME}")
+message("-- BUILD_GIT_BRANCH:         ${BUILD_GIT_BRANCH}")
+message("-- BUILD_GIT_COMMIT_SHORT:   ${BUILD_GIT_COMMIT_SHORT}")
+message("-- BUILD_GIT_COMMIT_FULL:    ${BUILD_GIT_COMMIT_FULL}")
 message("-- CMAKE_SYSTEM_NAME:        ${CMAKE_SYSTEM_NAME}")
 message("-- CMAKE_SYSTEM_PROCESSOR:   ${CMAKE_SYSTEM_PROCESSOR}")
 message("-- PROJECT_BINARY_DIR:       ${PROJECT_BINARY_DIR}")
@@ -132,18 +148,6 @@ if (APPLE)
   endif()
 endif()
 
-execute_process(COMMAND git rev-parse HEAD
-  OUTPUT_VARIABLE BUILD_GIT_COMMIT
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
-
-execute_process(COMMAND git rev-parse --abbrev-ref HEAD
-  OUTPUT_VARIABLE BUILD_GIT_BRANCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
-
 if(OPT_WARNINGS_CXX)
   check_cxx_compiler_flag("-Wall" WITH_WALL_CXX)
   if(WITH_WALL_CXX)
@@ -160,9 +164,6 @@ if(OPT_WARNINGS_CXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
   endif()
 endif()
-
-# ------ Find headers ------
-check_include_file(sys/utsname.h HAVE_SYS_UTSNAME_H)
 
 # ------ Find package ------
 if (OPT_DEPS_PATH)
@@ -182,18 +183,14 @@ endif()
 find_package(Threads REQUIRED)
 
 # libuv
-if (OPT_WITH_SYSTEM_LIBUV)
-  include(FindPackageHandleStandardArgs)
-  set(LIBUV_NAMES libuv uv)
-  find_package(PkgConfig)
-  pkg_check_modules(PC_LIBUV QUIET ${LIBUV_NAMES})
-  find_path(LIBUV_INCLUDE_DIR uv.h HINTS ${PC_LIBUV_INCLUDEDIR} ${PC_LIBUV_INCLUDE_DIRS})
-  find_library(LIBUV_LIBRARIES NAMES ${LIBUV_NAMES} HINTS ${PC_LIBUV_LIBDIR} ${PC_LIBUV_LIBRARY_DIRS})
-  find_package_handle_standard_args(libuv DEFAULT_MSG LIBUV_LIBRARIES LIBUV_INCLUDE_DIR)
-  if (NOT libuv_FOUND)
-    message(FATAL_ERROR "Required libuv package/lib not found.")
-  endif()
-else()
+include(FindPackageHandleStandardArgs)
+set(LIBUV_NAMES libuv uv)
+find_package(PkgConfig)
+pkg_check_modules(PC_LIBUV QUIET ${LIBUV_NAMES})
+find_path(LIBUV_INCLUDE_DIR uv.h HINTS ${PC_LIBUV_INCLUDEDIR} ${PC_LIBUV_INCLUDE_DIRS})
+find_library(LIBUV_LIBRARIES NAMES ${LIBUV_NAMES} HINTS ${PC_LIBUV_LIBDIR} ${PC_LIBUV_LIBRARY_DIRS})
+find_package_handle_standard_args(libuv DEFAULT_MSG LIBUV_LIBRARIES LIBUV_INCLUDE_DIR)
+if (NOT libuv_FOUND)
   set(ENABLE_CLANG_TIDY 0)
   set(BUILD_SHARED_LIBS 1)
   message("-- Fetching libuv 1.52.1")
@@ -208,6 +205,9 @@ else()
   if (NOT TARGET libuv::libuv)
     message(FATAL_ERROR "Required libuv target not found.")
   endif()
+else()
+  message("libuv include dir: ${LIBUV_INCLUDE_DIR}")
+  message("libuv libraries: ${LIBUV_LIBRARIES}")
 endif()
 
 # OpenSSL
@@ -216,38 +216,19 @@ set(OPENSSL_USE_STATIC_LIBS 1)
 find_package(OpenSSL REQUIRED)
 
 # cURL
-set(CURL_USE_STATIC_LIBS 1)
 include(FindCURL)
-if (OPT_WITH_SYSTEM_CURL)
-  find_package(CURL REQUIRED)
-else()
-  message("-- Fetching cURL 8.19.0")
-  FetchContent_Declare(curl
-    GIT_REPOSITORY https://github.com/curl/curl.git
-    GIT_TAG        8c908d2d0a6d32abdedda2c52e90bd56ec76c24d  # Release: curl 8.19.0
-    SYSTEM
-    OVERRIDE_FIND_PACKAGE
-  )
-  FetchContent_MakeAvailable(curl)
-  find_package(curl 8.19.0 EXACT REQUIRED)
-  if (TARGET CURL::CURL)
-    set_property(TARGET CURL::CURL PROPERTY POSITION_INDEPENDENT_CODE ON)
-  endif()
-endif()
-message("CURL include dir: ${CURL_INCLUDE_DIRS}")
-message("CURL libraries: ${CURL_LIBRARIES}")
+find_package(CURL)
+message("cURL include dir: ${CURL_INCLUDE_DIRS}")
+message("cURL libraries: ${CURL_LIBRARIES}")
 
 # SQLite3
 include(FindSQLite3)
-if (OPT_WITH_SYSTEM_SQLITE)
-  find_package(SQLite3 REQUIRED)
-  message("SQLite3 include dir: ${SQLite3_INCLUDE_DIRS}")
-  message("SQLite3 libs: ${SQLite3_LIBRARIES}")
-else()
-  message("-- Fetching SQLite amalgamation 3.53.0")
+find_package(SQLite3)
+if (NOT SQLite3_FOUND)
+  message("-- Fetching SQLite amalgamation 3.53.1")
   FetchContent_Declare(sqlite
-    URL      https://sqlite.org/2026/sqlite-autoconf-3530000.tar.gz
-    URL_HASH SHA3_256=60c4b08c6729761e488d185e0d52411da10b14c72b53ada6936dc5eea225cefe # Release: amalgamation version 3.53.0
+    URL      https://sqlite.org/2026/sqlite-autoconf-3530100.tar.gz
+    URL_HASH SHA3_256=36ca143645cf76997d07b66e9244c636b8ccdec64a1d50558259c4e415e6558b # Release: amalgamation version 3.53.1
   )
   FetchContent_MakeAvailable(sqlite)
   
@@ -272,30 +253,28 @@ else()
   set(SQLite3_FOUND TRUE) # TRUE from original CMake's module FindSQLite3.cmake
   set(SQLite3_INCLUDE_DIR  ${sqlite_INCLUDE_DIR})
   set(SQLite3_INCLUDE_DIRS ${sqlite_INCLUDE_DIR})
-  set(SQLite3_VERSION "3.51.0")
+  set(SQLite3_VERSION "3.51.1")
   if (NOT TARGET SQLite::SQLite3)
     add_library(SQLite::SQLite3 ALIAS sqlite_amalgamation)
   endif()
 endif()
 
 # Boost
-if (NOT OPT_WITH_SYSTEM_BOOST)
-  set(BOOST_INCLUDE_LIBRARIES decimal)
-  set(BOOST_ENABLE_CMAKE ON)
-  FetchContent_Declare(Boost
-    GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG        1a80576db6b70828803819fb6925132193bc5d0e # Release:  boost-1.91.0
-    SYSTEM
-    OVERRIDE_FIND_PACKAGE
-  )
-  set(Boost_USE_DEBUG_LIBS OFF CACHE BOOL "")
-  set(Boost_USE_RELEASE_LIBS ON CACHE BOOL "")
-  set(Boost_USE_MULTITHREADED ON CACHE BOOL "")
-  set(BOOST_ENABLE_PYTHON OFF CACHE BOOL "")
-  message("-- Found Boost include: ${BOOST_INCLUDE_LIBRARIES}")
-  FetchContent_MakeAvailable(Boost)
-endif()
-find_package(Boost 1.91.0 EXACT REQUIRED COMPONENTS decimal)
+set(BOOST_INCLUDE_LIBRARIES decimal)
+set(BOOST_ENABLE_CMAKE ON)
+FetchContent_Declare(boost_decimal
+  GIT_REPOSITORY https://github.com/boostorg/decimal.git
+  GIT_TAG        59d79cbe1edde0428606187cdca1477315a55f37 # Release:  boost-1.91.0
+  SYSTEM
+  OVERRIDE_FIND_PACKAGE
+)
+set(Boost_USE_DEBUG_LIBS OFF CACHE BOOL "")
+set(Boost_USE_RELEASE_LIBS ON CACHE BOOL "")
+set(Boost_USE_MULTITHREADED ON CACHE BOOL "")
+set(BOOST_ENABLE_PYTHON OFF CACHE BOOL "")
+message("-- Found Boost include: ${BOOST_INCLUDE_LIBRARIES}")
+FetchContent_MakeAvailable(boost_decimal)
+find_package(boost_decimal 1.91.0 EXACT REQUIRED)
 
 # RapidJSON
 FetchContent_Declare(RapidJSON
@@ -307,7 +286,10 @@ FetchContent_Declare(RapidJSON
 set(RAPIDJSON_BUILD_DOC OFF CACHE BOOL "" FORCE)
 set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(RAPIDJSON_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(RAPIDJSON_BUILD_THIRDPARTY_GTEST OFF CACHE BOOL "" FORCE)
+set(RAPIDJSON_BUILD_CXX11 ON CACHE BOOL "" FORCE)
 set(RAPIDJSON_BUILD_CXX17 ON CACHE BOOL "" FORCE)
+set(RAPIDJSON_BUILD_CXX20 ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(RapidJSON)
 find_package(RapidJSON 1.1.0 EXACT REQUIRED)
 if (NOT RapidJSON_INCLUDE_DIR)
@@ -328,32 +310,20 @@ endif()
 message("")
 
 # ----- Configuration -----
-set(NGA_HEADER_COPYRIGHT "/*
- * Copyright (C) 2025 - 2026 Oleh Kulykov <olehkulykov@gmail.com>
- * All Rights Reserved.
- *
- * Unauthorized copying of this file, transferring or reproduction of the
- * contents of this project, via any medium, is strictly prohibited.
- * The contents of this project are proprietary and confidential.
- *
- */
-")
-
 set(NGA_CONFIGURE_BODY "
 #if defined(__cplusplus)
-#  include <limits>
-#  include <cstdint>
-#  include <cinttypes>
+#  include <cstdlib>
 #else
-#  include <stdint.h>
-#  include <inttypes.h>
+#  include <stdlib.h>
 #endif
 
 #define PROJECT_NAME \"@PROJECT_NAME@\"
 #define BUILD_GIT_BRANCH \"@BUILD_GIT_BRANCH@\"
-#define BUILD_GIT_COMMIT \"@BUILD_GIT_COMMIT@\"
+#define BUILD_GIT_COMMIT_SHORT \"@BUILD_GIT_COMMIT_SHORT@\"
+#define BUILD_GIT_COMMIT_FULL \"@BUILD_GIT_COMMIT_FULL@\"
 #cmakedefine BUILD_GIT_TAG \"@BUILD_GIT_TAG@\"
 #define BUILD_TYPE \"@CMAKE_BUILD_TYPE@\"
+#define BUILD_TYPE_LOWER \"@CMAKE_BUILD_TYPE_LOWER@\"
 #define BUILD_SYSTEM_NAME \"@CMAKE_SYSTEM_NAME@\"
 #define BUILD_SYSTEM_PROCESSOR \"@CMAKE_SYSTEM_PROCESSOR@\"
 #define CLIENT_VERSION_MAJOR @CLIENT_VERSION_MAJOR@
@@ -364,13 +334,11 @@ set(NGA_CONFIGURE_BODY "
 #define CLIENT_TIMESTAMP \"@CLIENT_TIMESTAMP@\"
 #define COPYRIGHT_HOLDERS \"@COPYRIGHT_HOLDERS@\"
 #define COPYRIGHT_YEAR @COPYRIGHT_YEAR@
-
-#cmakedefine HAVE_SYS_UTSNAME_H @HAVE_SYS_UTSNAME_H@
 ")
 
 file(CONFIGURE
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${NGA_DAEMON_NAME}-config.pch"
-  CONTENT "${NGA_HEADER_COPYRIGHT}
+  CONTENT "
 #ifndef __NGA_DAEMON_CONFIG_PCH__
 #define __NGA_DAEMON_CONFIG_PCH__ 1
 ${NGA_CONFIGURE_BODY}
@@ -404,6 +372,7 @@ set(NGA_CORE_HEADERS
   src/core/nga_time_utils.hpp
   src/core/nga_trio.hpp
   src/core/nga_utils.hpp
+  src/core/nga_version.h
   src/nga_types.hpp
   src/nga.h
   src/nga.hpp
@@ -416,16 +385,19 @@ set(NGA_CORE_SOURCES
   src/core/nga_dispatch_queue.cpp
   src/core/nga_file_utils.cpp
   src/core/nga_http.cpp
+  src/core/nga_logger.cpp
   src/core/nga_rapidjson.cpp
   src/core/nga_sqlite_db.cpp
-  src/core/nga_logger.cpp
+  src/core/nga_version.cpp
 )
 
 set(NGA_KRAKEN_HEADERS
   src/kraken/nga_kraken_api.hpp
-  src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_api_base.hpp
   src/kraken/nga_kraken_api_error.hpp
+  src/kraken/nga_kraken_app.hpp
+  src/kraken/nga_kraken_calc.hpp
+  src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_db_order.hpp
   src/kraken/nga_kraken_decimal_utils.hpp
   src/kraken/nga_kraken_dummy_calc.hpp
@@ -442,6 +414,8 @@ set(NGA_KRAKEN_SOURCES
   src/kraken/nga_kraken_api.cpp
   src/kraken/nga_kraken_api_base.cpp
   src/kraken/nga_kraken_api_error.cpp
+  src/kraken/nga_kraken_app.cpp
+  src/kraken/nga_kraken_calc.cpp
   src/kraken/nga_kraken_db_order.cpp
   src/kraken/nga_kraken_order.cpp
   src/kraken/nga_kraken_order_profit.cpp
@@ -494,6 +468,8 @@ source_group("core"
   src/core/nga_time_utils.hpp
   src/core/nga_trio.hpp
   src/core/nga_utils.hpp
+  src/core/nga_version.cpp
+  src/core/nga_version.h
   src/nga_types.hpp
   src/nga.h
   src/nga.hpp
@@ -503,11 +479,15 @@ source_group("kraken"
   FILES
   src/kraken/nga_kraken_api.cpp
   src/kraken/nga_kraken_api.hpp
-  src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_api_base.cpp
   src/kraken/nga_kraken_api_base.hpp
   src/kraken/nga_kraken_api_error.cpp
   src/kraken/nga_kraken_api_error.hpp
+  src/kraken/nga_kraken_app.cpp
+  src/kraken/nga_kraken_app.hpp
+  src/kraken/nga_kraken_calc.cpp
+  src/kraken/nga_kraken_calc.hpp
+  src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_db_order.cpp
   src/kraken/nga_kraken_db_order.hpp
   src/kraken/nga_kraken_decimal_utils.hpp
@@ -537,12 +517,14 @@ source_group("telegram"
 
 source_group("daemon"
   FILES
+  src/nga_config.cpp
+  src/nga_config.hpp
   src/nga_daemon.cpp
 )
 
 # ------ Binaries, Link (in Park) ---------
 add_executable(${NGA_DAEMON_NAME}
-  "src/nga_daemon.cpp"
+  "src/nga_daemon.cpp" "src/nga_config.cpp" "src/nga_config.hpp"
   ${NGA_CORE_HEADERS} ${NGA_CORE_SOURCES}
   ${NGA_KRAKEN_HEADERS} ${NGA_KRAKEN_SOURCES}
   ${NGA_TELEGRAM_HEADERS} ${NGA_TELEGRAM_SOURCES}

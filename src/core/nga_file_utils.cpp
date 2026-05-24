@@ -7,6 +7,8 @@
  * The contents of this project are proprietary and confidential.
  */
 
+#include <stdexcept>
+#include <format>
 #include <cstdio>       // fopen
 #include <cstdlib>      // strtoll
 #include <cstdio>       // snprintf
@@ -104,9 +106,7 @@ namespace file {
         
         FILE * f = ::fopen(path, "w+b");
         if (!f) {
-            char reason[256];
-            ::snprintf(reason, 256, "Open PID file for writing, errno: %i (%s)", errno, ::strerror(errno));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("Open PID file for writing, errno: {} ({})", errno, ::strerror(errno)));
         }
         
         bool isWriteError = false;
@@ -127,9 +127,7 @@ namespace file {
         
         static const char * dnPath = "/dev/null";
         if ((::freopen(dnPath, "r", ::stdin) == nullptr) || (::freopen(dnPath, "w", ::stdout) == nullptr) || (::freopen(dnPath, "w", ::stderr) == nullptr)) {
-            char reason[256];
-            ::snprintf(reason, 256, "Reopen std file descriptors, errno: %i (%s)", errno, ::strerror(errno));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("Reopen std file descriptors, errno: {} ({})", errno, ::strerror(errno)));
         }
     }
     

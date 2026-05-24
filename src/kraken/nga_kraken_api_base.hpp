@@ -14,7 +14,6 @@
 #include <string>
 #include <array>
 #include <vector>
-#include <stdexcept>
 #include <cstdarg>
 
 #include "../nga_types.hpp"

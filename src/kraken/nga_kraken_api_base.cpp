@@ -7,6 +7,8 @@
  * The contents of this project are proprietary and confidential.
  */
 
+#include <stdexcept>
+#include <format>
 #include <algorithm>
 #include <ctime>
 
@@ -77,7 +79,7 @@ namespace kraken {
                                                         std::shared_ptr<DataVector> && reusable,
                                                         const char * NGA_NULLABLE firstPostArg, ...) {
         if (_aKey.empty() || _pKey.empty()) {
-            throw std::invalid_argument("Can't use private API without keys");
+            throw std::invalid_argument("API: can't use private API without keys");
         }
         
         FixedStringStream<4095> payload;
@@ -103,7 +105,7 @@ namespace kraken {
         
         const auto payloadSha256 = crypto::sha256(payload, payload.length());
         if (path.availableLength() < payloadSha256.size()) {
-            throw std::logic_error("Unsupported method");
+            throw std::logic_error("API: unsupported method");
         }
         
         ::memcpy(static_cast<char *>(path) + path.length(), payloadSha256.data(), payloadSha256.size());
@@ -148,7 +150,7 @@ namespace kraken {
     APIBase::APIBase(String && apiKey, String && privateKey) {
         auto headers = generateHeaders();
         auto pKey = std::move(privateKey);
-        _pKey = crypto::base64Decode(pKey.c_str(), pKey.length());
+        _pKey = crypto::base64Decode(pKey.c_str(), pKey.size());
         _aKey = std::move(apiKey);
         _defaultHeaders = std::move(headers);
     }
@@ -164,9 +166,7 @@ namespace kraken {
     uint64_t APIBase::nonceValue() {
         struct timespec tms;
         if (::clock_gettime(CLOCK_REALTIME, &tms) != 0) {
-            char reason[256];
-            ::snprintf(reason, 256, "Error retrieve current time, errno: %i (%s)", errno, ::strerror(errno));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("API: error retrieve current time, errno: {} ({})", errno, ::strerror(errno)));
         }
         return (static_cast<uint64_t>(tms.tv_sec) * 1000000) + (tms.tv_nsec / 1000);
     }

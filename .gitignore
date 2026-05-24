@@ -44,6 +44,7 @@ build_xcode/
 Build/
 build-*/
 _deps/
+srcp/
 
 # CMake generated files
 CMakeFiles/

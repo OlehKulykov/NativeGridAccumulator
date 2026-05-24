@@ -11,6 +11,7 @@
 #define __NGA_KRAKEN_DECIMAL_UTILS_HPP__ 1
 
 #include <stdexcept>
+#include <format>
 #include <cstring>
 #include <cstdio>
 #include <cerrno>
@@ -31,11 +32,16 @@ namespace kraken {
         ::memset(cStr, 0, cStrSize);
         auto convRes = boost::decimal::to_chars(cStr, cStr + cStrSize, decNum, std::chars_format::general, precision);
         if (convRes.ec != std::errc{}) {
-            char reason[256];
-            ::snprintf(reason, 256, "Decimal to string convertion error: %i, errno: %i (%s)", static_cast<int>(convRes.ec), errno, ::strerror(errno));
-            throw std::runtime_error(reason);
+            throw std::runtime_error(std::format("Decimal to string convertion error: {}, errno: {} ({})", static_cast<int>(convRes.ec), errno, ::strerror(errno)));
         }
         *convRes.ptr = 0;
+    }
+    
+    template<class T = String>
+    inline T decimalToString(const Decimal decNum, const int precision = 32) {
+        char tmpCStrBuff[maxDecimalCStringLen];
+        decimalToCString(decNum, static_cast<char *>(tmpCStrBuff), maxDecimalCStringLen, precision);
+        return T(static_cast<const char *>(tmpCStrBuff));
     }
     
 } // namespace kraken
