@@ -16,6 +16,7 @@ set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
 
 set(NGA_DAEMON_NAME nga-d)
+set(NGA_UTILITY_NAME nga-u)
 
 set(PACKAGE_URL "https://github.com/OlehKulykov/NativeGridAccumulator")
 set(PACKAGE_BUGREPORT "https://github.com/OlehKulykov/NativeGridAccumulator")
@@ -345,6 +346,15 @@ ${NGA_CONFIGURE_BODY}
 #endif
 ")
 
+file(CONFIGURE
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${NGA_UTILITY_NAME}-config.pch"
+  CONTENT "
+#ifndef __NGA_UTILITY_CONFIG_PCH__
+#define __NGA_UTILITY_CONFIG_PCH__ 1
+${NGA_CONFIGURE_BODY}
+#endif
+")
+
 # ---- Include ----
 include_directories(${PROJECT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -435,6 +445,24 @@ set(NGA_TELEGRAM_SOURCES
   src/telegram/nga_telegram_message_base.cpp
 )
 
+set(NGA_UTILITY_HEADERS
+  src/kraken/nga_kraken_api.hpp
+  src/kraken/nga_kraken_api_base.hpp
+  src/kraken/nga_kraken_api_error.hpp
+  src/kraken/nga_kraken_db_order.hpp
+  src/kraken/nga_kraken_order.hpp
+  src/kraken/nga_kraken_types.hpp
+)
+
+set(NGA_UTILITY_HEADERS
+  src/kraken/nga_kraken_api.cpp
+  src/kraken/nga_kraken_api_base.cpp
+  src/kraken/nga_kraken_api_error.cpp
+  src/kraken/nga_kraken_db_order.cpp
+  src/kraken/nga_kraken_order.cpp
+  src/kraken/nga_kraken_types.cpp
+)
+
 # ---- Groups ----
 source_group("core"
   FILES
@@ -522,6 +550,11 @@ source_group("daemon"
   src/nga_daemon.cpp
 )
 
+source_group("utility"
+  FILES
+  src/nga_utility.cpp
+)
+
 # ------ Binaries, Link (in Park) ---------
 add_executable(${NGA_DAEMON_NAME}
   "src/nga_daemon.cpp" "src/nga_config.cpp" "src/nga_config.hpp"
@@ -570,6 +603,32 @@ endif()
 
 set_property(TARGET ${NGA_DAEMON_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_precompile_headers(${NGA_DAEMON_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/${NGA_DAEMON_NAME}-config.pch")
+
+
+add_executable(${NGA_UTILITY_NAME}
+  "src/nga_utility.cpp"
+  ${NGA_UTILITY_HEADERS} ${NGA_UTILITY_SOURCES}
+  ${NGA_CORE_HEADERS} ${NGA_CORE_SOURCES}
+)
+
+target_include_directories(${NGA_UTILITY_NAME} SYSTEM AFTER
+  PRIVATE "${CURL_INCLUDE_DIRS}"
+  PRIVATE "${RapidJSON_INCLUDE_DIR}"
+  PRIVATE SQLite::SQLite3
+  PRIVATE OpenSSL::Crypto
+  PRIVATE Boost::decimal
+)
+
+target_link_libraries(${NGA_UTILITY_NAME}
+  PRIVATE ${CURL_LIBRARIES}
+  PRIVATE Threads::Threads
+  PRIVATE SQLite::SQLite3
+  PRIVATE OpenSSL::Crypto
+  PRIVATE Boost::decimal
+)
+
+set_property(TARGET ${NGA_UTILITY_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_precompile_headers(${NGA_UTILITY_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/${NGA_UTILITY_NAME}-config.pch")
 
 # ------ testing ---------
 enable_testing()

@@ -20,19 +20,6 @@
 namespace nga {
 namespace kraken {
     
-    // OHLC market data
-    struct OHLC final {
-        double close;
-        int64_t timestamp;
-    };
-    
-    inline struct OHLC OHLCMake(const double close, const int64_t timestamp) noexcept {
-        OHLC res;
-        res.close = close;
-        res.timestamp = timestamp;
-        return res;
-    }
-    
     enum class Token : uint8_t {
         USDC    = 1,
         ADA,
