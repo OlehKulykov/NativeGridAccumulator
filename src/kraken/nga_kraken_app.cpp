@@ -152,12 +152,12 @@ namespace kraken {
     DBOrder App::createInversed(const PairData & data, const DBOrder & closed, const DBOrder & parent) {
         const Decimal decZero(0);
         const bool isClosedValid =
+            (!closed.pair.empty()) &&
             (closed.volume > decZero) &&
             (closed.cost > decZero) &&
             (closed.fee >= decZero) &&
             (closed.price > decZero) &&
             (closed.type != OrderType{0}) &&
-            (closed.pair != OHLCPair{0}) &&
             (closed.status != OrderStatus{0});
         if (!isClosedValid) {
             throw std::logic_error(std::format("App: invalid order to create inversed: {}", Order::description(closed).str()));
@@ -331,7 +331,7 @@ namespace kraken {
         }
     }
     
-    void App::updateABI(PairData & data, const OHLCPair pair) {
+    void App::updateABI(PairData & data, const String & pair) {
         try {
             const auto ab = _api->fetchBestAskBid(pair);
             data.abi.first = ab.first;
@@ -573,7 +573,7 @@ namespace kraken {
         return merged;
     }
     
-    void App::sync(std::map<OHLCPair, PairData> & datas, const std::map<OHLCPair, OrderSettingsBase> & settings) {
+    void App::sync(std::map<String, PairData> & datas, const std::map<String, OrderSettingsBase> & settings) {
         for (auto it = datas.begin(); it != datas.end(); ) {
             if (settings.contains(it->first)) {
                 it++;

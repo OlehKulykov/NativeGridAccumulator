@@ -20,54 +20,16 @@
 namespace nga {
 namespace kraken {
     
-    enum class Token : uint8_t {
-        USDC    = 1,
-        ADA,
-        ATOM,
-        AVAX,
-        BNB,
-        BONK,
-        BTC,
-        DASH,
-        ETH,
-        EUR,
-        FLOKI,
-        LTC,
-        PEPE,
-        POL,
-        SOL,
-        TON,
-        TRX,
-        USD,
-        USDT
+    enum AssetPairStatus : uint8_t {
+        online      = 1,
+        cancelOnly,
+        postOnly,
+        limitOnly,
+        reduceOnly
     };
     
-    NGA_CPP_API(const char * NGA_NONNULL) TokenToKey(const Token token) noexcept;
-    
-    enum class OHLCPair : uint8_t {
-        USDC_EUR    = 1,
-        ADA_USDC,
-        ATOM_USDC,
-        AVAX_USDC,
-        BNB_USDC,
-        BONK_USD,
-        BTC_USDC,
-        DASH_USD,
-        ETH_USDC,
-        FLOKI_USD,
-        LTC_USDC,
-        PEPE_USD,
-        POL_USD,
-        SOL_USDC,
-        TON_USDC,
-        TRX_USD
-    };
-    
-    typedef PairPOD<Token, Token> OHLCPairTokens;
-    
-    NGA_CPP_API(OHLCPairTokens) OHLCPairToTokens(const OHLCPair pair) noexcept;
-    NGA_CPP_API(const char * NGA_NONNULL) OHLCPairToKey(const OHLCPair pair) noexcept;
-    NGA_CPP_API(OHLCPair) OHLCPairFromKey(const char * NGA_NULLABLE key) noexcept;
+    NGA_CPP_API(AssetPairStatus) AssetPairStatusFromKey(const char * NGA_NULLABLE key) noexcept;
+    NGA_CPP_API(const char * NGA_NONNULL) AssetPairStatusToKey(const AssetPairStatus status) noexcept;
     
     NGA_CPP_API(OrderStatus) OrderStatusFromKey(const char * NGA_NULLABLE key) noexcept;
     NGA_CPP_API(const char * NGA_NONNULL) OrderStatusToKey(const OrderStatus status) noexcept;

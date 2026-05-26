@@ -24,6 +24,7 @@ namespace nga {
 namespace kraken {
     
     struct NGA_CPP_CLASS_API Order {
+        String pair;
         String txId;
         String clientId;
         Decimal volume{-1};
@@ -33,7 +34,6 @@ namespace kraken {
         Decimal openTimestamp{-1}; // Unix timestamp of when order was placed
         OrderStatus status{0};
         OrderType type{0};
-        OHLCPair pair{0};
         
         inline const String & clOrTxId() const noexcept { return clientId.empty() ? txId : clientId; }
         

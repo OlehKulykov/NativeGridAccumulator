@@ -12,35 +12,59 @@
 #include <utility>
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
-#include "nga_types.hpp"
 #include "kraken/nga_kraken_api.hpp"
 #include "core/nga_version.h"
+#include "core/nga_c_string.h"
 
-static void printHelp(void) noexcept {
+static int printHelp(void) noexcept {
     std::flush(std::cout) << PROJECT_NAME << " utility, " << nga_version_string() << ", " << nga_build_string() << std::endl;
     std::cout << "-h, --help    Display this help text and exit" << std::endl;
     std::cout << "--kraken      Use Kraken service, default" << std::endl;
     std::cout << "--asset-pairs Print tradable asset pairs. Public endpoint" << std::endl;
     std::cout << "--filter      Filter string, case insensitive" << std::endl;
+    return EXIT_SUCCESS;
 }
 
-static void printAssetPairs(const nga::String & filter) {
+static int printAssetPairs(const nga::String & filter) {
     using namespace nga;
     
-    
+    std::flush(std::cout) << "Receiving Kraken tradable asset pairs..." << std::endl;
+    std::vector<kraken::AssetPairBase> pairs;
+    try {
+        pairs = kraken::API().tradableAssetPairs();
+    } catch (const std::exception & exception) {
+        std::flush(std::cout) << "Error: " << (exception.what() ?: "unknown error") << std::endl;
+    }
+    std::flush(std::cout) << "Done. Total " << pairs.size() << " pairs" << std::endl;
+    std::flush(std::cout) << "Name | base | pair decimals | lot decimals | status" << std::endl;;
+    const char * cFilter = filter.c_str();
+    for (const auto & pair : pairs) {
+        if (cFilter) {
+            bool print = (pair.name.c_str() && ::strcasestr(pair.name.c_str(), cFilter));
+            if (!print) {
+                print = (pair.base.c_str() && ::strcasestr(pair.base.c_str(), cFilter));
+            }
+            if (!print) {
+                continue;
+            }
+        }
+        
+        std::flush(std::cout) << pair.name << " | " << pair.base << " | " << pair.pairDecimals << " | " << pair.lotDecimals << " | " << kraken::AssetPairStatusToKey(pair.status) << std::endl;
+    }
+    std::flush(std::cout);
+    return EXIT_SUCCESS;
 }
 
 int main(int argc, const char * argv[]) {
     using namespace nga;
     
-    printHelp();
-    
+    String filter;
     bool isKraken = false;
     bool isAssetPairs = false;
-    String filter;
     
     for (int i = 0; i < argc; i++) {
         const char * arg = argv[i];
@@ -58,9 +82,9 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    if (isAssetPairs) {
-        printAssetPairs(filter);
+    if (isAssetPairs && isKraken) {
+        return printAssetPairs(filter);
     }
     
-    return EXIT_SUCCESS;
+    return printHelp();
 }

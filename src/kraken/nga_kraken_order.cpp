@@ -41,7 +41,7 @@ namespace kraken {
         char tmpStr[maxDecimalCStringLen];
         StringStream stream;
         
-        stream << OHLCPairToKey(order.pair)
+        stream << (order.pair.c_str() ?: emptyCString)
         << ", " << OrderTypeToKey(order.type);
         
         decimalToCString(order.volume, tmpStr);

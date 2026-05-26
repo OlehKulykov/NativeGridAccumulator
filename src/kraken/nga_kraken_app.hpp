@@ -52,7 +52,7 @@ namespace kraken {
         std::condition_variable _condition;
         std::shared_ptr<Logger> _logger;
         std::shared_ptr<ReusableMT<DataVector> > _reusable;
-        std::map<OHLCPair, PairData> _datas;
+        std::map<String, PairData> _datas;
         String _ordersBDPath;
         std::mutex _syncMutex;
         std::unique_ptr<API> _api;
@@ -81,7 +81,7 @@ namespace kraken {
         void updateOrdersInfos();
         void syncConfig();
         void syncOrders();
-        void updateABI(PairData &, const OHLCPair);
+        void updateABI(PairData &, const String &);
         void updateABI();
         
         void sync(Config &&);
@@ -91,7 +91,7 @@ namespace kraken {
         
         MergedDBOrders mergeOrders(APIOrders &&, APIOrders &&, DBOrders &&);
         
-        static void sync(std::map<OHLCPair, PairData> &, const std::map<OHLCPair, OrderSettingsBase> &);
+        static void sync(std::map<String, PairData> &, const std::map<String, OrderSettingsBase> &);
         static int64_t currentTimeMilli();
         
     public:

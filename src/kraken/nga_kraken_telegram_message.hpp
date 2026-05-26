@@ -21,19 +21,19 @@ namespace kraken {
     class NGA_CPP_CLASS_API TelegramMessage final : public telegram::MessageBase {
     private:
         static String orderString(const DBOrder & order);
-        static String profitString(const OrderProfit & profit, const OHLCPair pair);
+        static String profitString(const OrderProfit & profit, const String & pair);
         
     public:
         void onClosed(const DBOrder & order);
-        void addClosedProfit(const OrderProfit & profit, const OHLCPair pair);
+        void addClosedProfit(const OrderProfit & profit, const String & pair);
         
         void onCreated(const DBOrder & order);
-        void addExpectedProfit(const OrderProfit & profit, const OHLCPair pair);
+        void addExpectedProfit(const OrderProfit & profit, const String & pair);
         void addABIRate(const Trio<Decimal, Decimal, Decimal> abi, const Decimal rate);
         void addDetails(const DBOrder & order);
         
         void onUpdated(const DBOrder & before, const DBOrder & after);
-        void addUpdatedExpectedProfits(const OrderProfit & before, const OrderProfit & after, const OHLCPair pair);
+        void addUpdatedExpectedProfits(const OrderProfit & before, const OrderProfit & after, const String & pair);
         
         void addSeparator();
         

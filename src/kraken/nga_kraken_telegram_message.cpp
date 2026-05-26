@@ -20,47 +20,47 @@ namespace nga {
 namespace kraken {
     
     String TelegramMessage::orderString(const DBOrder & order) {
-        auto pair = OHLCPairToTokens(order.pair);
-        char buff0[maxDecimalCStringLen], buff1[maxDecimalCStringLen];
+//        auto pair = OHLCPairToTokens(order.pair);
+//        char buff0[maxDecimalCStringLen], buff1[maxDecimalCStringLen];
         StringStream stream;
-        stream << "[<code>" << order.id;
-        if (order.parentId > 0) {
-            stream << "/" << order.parentId;
-        }
-        stream << "</code>] <b>" << OrderTypeToKey(order.type) << "</b> order <b>" << TokenToKey(pair.first) << '/' << TokenToKey(pair.second) << "</b>" << '\n';
-        
-        decimalToCString(order.volume, buff0);
-        decimalToCString(order.price, buff1);
-        stream << "<code>" << buff0 << "</code> " << TokenToKey(pair.first)
-        << " @ <code>" << buff1 << "</code> " << TokenToKey(pair.second);
-        
-        const Decimal decZero(0);
-        if ((order.cost > decZero) && (order.fee >= decZero)) {
-            decimalToCString((order.cost + order.fee), buff0);
-            stream << "\nTotal <code>" << buff0 << "</code> " << TokenToKey(pair.second) << "<b> ";
-            if (order.fee == decZero) {
-                stream << "≈";
-            } else {
-                stream << '=';
-            }
-            stream << " </b>";
-            decimalToCString(order.cost, buff0);
-            decimalToCString(order.fee, buff1);
-            stream << "cost <code>" << buff0 << "</code> " << TokenToKey(pair.second)
-            << "<b> + </b>fee <code>" << buff1 << "</code> " << TokenToKey(pair.second);
-        }
+//        stream << "[<code>" << order.id;
+//        if (order.parentId > 0) {
+//            stream << "/" << order.parentId;
+//        }
+//        stream << "</code>] <b>" << OrderTypeToKey(order.type) << "</b> order <b>" << TokenToKey(pair.first) << '/' << TokenToKey(pair.second) << "</b>" << '\n';
+//        
+//        decimalToCString(order.volume, buff0);
+//        decimalToCString(order.price, buff1);
+//        stream << "<code>" << buff0 << "</code> " << TokenToKey(pair.first)
+//        << " @ <code>" << buff1 << "</code> " << TokenToKey(pair.second);
+//        
+//        const Decimal decZero(0);
+//        if ((order.cost > decZero) && (order.fee >= decZero)) {
+//            decimalToCString((order.cost + order.fee), buff0);
+//            stream << "\nTotal <code>" << buff0 << "</code> " << TokenToKey(pair.second) << "<b> ";
+//            if (order.fee == decZero) {
+//                stream << "≈";
+//            } else {
+//                stream << '=';
+//            }
+//            stream << " </b>";
+//            decimalToCString(order.cost, buff0);
+//            decimalToCString(order.fee, buff1);
+//            stream << "cost <code>" << buff0 << "</code> " << TokenToKey(pair.second)
+//            << "<b> + </b>fee <code>" << buff1 << "</code> " << TokenToKey(pair.second);
+//        }
         
         return stream.str();
     }
     
-    String TelegramMessage::profitString(const OrderProfit & profit, const OHLCPair pair) {
+    String TelegramMessage::profitString(const OrderProfit & profit, const String & pair) {
         char buff0[maxDecimalCStringLen], buff1[maxDecimalCStringLen];
-        auto keys = OHLCPairToTokens(pair);
+//        auto keys = OHLCPairToTokens(pair);
         decimalToCString(profit.volume, buff0);
         decimalToCString(profit.cost, buff1);
         StringStream stream;
-        stream << "<b>" << OrderTypeToKey(profit.from) << "→" << OrderTypeToKey(profit.to) << "</b> ";
-        stream << "volume <code>" << buff0 << "</code> " << TokenToKey(keys.first) << " and cost <code>" << buff1 << "</code> " << TokenToKey(keys.second);
+//        stream << "<b>" << OrderTypeToKey(profit.from) << "→" << OrderTypeToKey(profit.to) << "</b> ";
+//        stream << "volume <code>" << buff0 << "</code> " << TokenToKey(keys.first) << " and cost <code>" << buff1 << "</code> " << TokenToKey(keys.second);
         return stream.str();
     }
     
@@ -73,7 +73,7 @@ namespace kraken {
         addBlock(stream.str());
     }
     
-    void TelegramMessage::addClosedProfit(const OrderProfit & profit, const OHLCPair pair) {
+    void TelegramMessage::addClosedProfit(const OrderProfit & profit, const String & pair) {
         StringStream stream;
         stream << "\n\n" << "🪎 Profit " << profitString(profit, pair);
         addBlock(stream.str());
@@ -88,7 +88,7 @@ namespace kraken {
         addBlock(stream.str());
     }
     
-    void TelegramMessage::addExpectedProfit(const OrderProfit & profit, const OHLCPair pair) {
+    void TelegramMessage::addExpectedProfit(const OrderProfit & profit, const String & pair) {
         StringStream stream;
         stream << "\n\n" << "🪎 Expected profit " << profitString(profit, pair);
         addBlock(stream.str());
@@ -150,7 +150,7 @@ namespace kraken {
         addBlock(stream.str());
     }
     
-    void TelegramMessage::addUpdatedExpectedProfits(const OrderProfit & before, const OrderProfit & after, const OHLCPair pair) {
+    void TelegramMessage::addUpdatedExpectedProfits(const OrderProfit & before, const OrderProfit & after, const String & pair) {
         StringStream stream;
         stream << "\n\n" << "⚠️ Updated expected profit " << profitString(after, pair) << "\n\n";
         stream << "Previous expected profit " << profitString(before, pair);

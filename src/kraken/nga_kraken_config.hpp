@@ -23,7 +23,7 @@ namespace kraken {
     struct NGA_CPP_CLASS_API Config final {
         String apiKey;
         String privateKey;
-        std::map<OHLCPair, OrderSettingsBase> orderSettings;
+        std::map<String, OrderSettingsBase> orderSettings;
         std::filesystem::path ordersBD;
         std::pair<uint32_t, uint32_t> checkOrdersTicks;
         std::pair<uint32_t, uint32_t> updateAskBidTicks;

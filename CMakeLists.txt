@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.31)
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
 set(CLIENT_VERSION_MINOR 14)
-set(CLIENT_VERSION_PATCH 2)
+set(CLIENT_VERSION_PATCH 3)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -406,6 +406,7 @@ set(NGA_KRAKEN_HEADERS
   src/kraken/nga_kraken_api_base.hpp
   src/kraken/nga_kraken_api_error.hpp
   src/kraken/nga_kraken_app.hpp
+  src/kraken/nga_kraken_asset_pair_base.hpp
   src/kraken/nga_kraken_calc.hpp
   src/kraken/nga_kraken_config.hpp
   src/kraken/nga_kraken_db_order.hpp
@@ -513,6 +514,7 @@ source_group("kraken"
   src/kraken/nga_kraken_api_error.hpp
   src/kraken/nga_kraken_app.cpp
   src/kraken/nga_kraken_app.hpp
+  src/kraken/nga_kraken_asset_pair_base.hpp
   src/kraken/nga_kraken_calc.cpp
   src/kraken/nga_kraken_calc.hpp
   src/kraken/nga_kraken_config.hpp

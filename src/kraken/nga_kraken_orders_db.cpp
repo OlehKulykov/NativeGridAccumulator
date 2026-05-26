@@ -79,7 +79,7 @@ namespace kraken {
             const char * tmpText;
             DBOrder order;
             order.id = ::sqlite3_column_int64(stmtPtr, 0); // 0=id
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 1))) ) { order.pair = OHLCPairFromKey(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 1))) ) { order.pair = tmpText; }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 2))) ) { order.volume = Decimal(tmpText); }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 3))) ) { order.price = Decimal(tmpText); }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 4))) ) { order.cost = Decimal(tmpText); }
@@ -122,7 +122,7 @@ namespace kraken {
             auto * stmtPtr = stmt.get();
             const char * tmpText;
             order.id = ::sqlite3_column_int64(stmtPtr, 0); // 0=id
-            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 1))) ) { order.pair = OHLCPairFromKey(tmpText); }
+            if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 1))) ) { order.pair = tmpText; }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 2))) ) { order.volume = Decimal(tmpText); }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 3))) ) { order.price = Decimal(tmpText); }
             if ( (tmpText = reinterpret_cast<const char *>(::sqlite3_column_text(stmtPtr, 4))) ) { order.cost = Decimal(tmpText); }
@@ -191,7 +191,7 @@ namespace kraken {
         
         auto stmt = prepare(stream);
         auto * stmtPtr = stmt.get();
-        int res = ::sqlite3_bind_text(stmtPtr, 1, OHLCPairToKey(order.pair), -1, SQLITE_STATIC);
+        int res = ::sqlite3_bind_text(stmtPtr, 1, (order.pair.c_str() ?: emptyCString), -1, SQLITE_STATIC);
         if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 2, volumeStr, -1, SQLITE_STATIC); }
         if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 3, priceStr, -1, SQLITE_STATIC); }
         if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 4, costStr, -1, SQLITE_STATIC); }
@@ -244,7 +244,7 @@ namespace kraken {
         auto stmt = prepare(stream);
         auto * stmtPtr = stmt.get();
         int res = ::sqlite3_bind_int64(stmtPtr, 1, order.id);
-        if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 2, OHLCPairToKey(order.pair), -1, SQLITE_STATIC); }
+        if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 2, (order.pair.c_str() ?: emptyCString), -1, SQLITE_STATIC); }
         if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 3, volumeStr, -1, SQLITE_STATIC); }
         if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 4, priceStr, -1, SQLITE_STATIC); }
         if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 5, costStr, -1, SQLITE_STATIC); }
@@ -301,7 +301,7 @@ namespace kraken {
                 
                 auto * stmtPtr = stmt.get();
                 int res = ::sqlite3_bind_int64(stmtPtr, 1, order.id);
-                if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 2, OHLCPairToKey(order.pair), -1, SQLITE_STATIC); }
+                if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 2, (order.pair.c_str() ?: emptyCString), -1, SQLITE_STATIC); }
                 if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 3, volumeStr, -1, SQLITE_STATIC); }
                 if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 4, priceStr, -1, SQLITE_STATIC); }
                 if (res == SQLITE_OK) { res = ::sqlite3_bind_text(stmtPtr, 5, costStr, -1, SQLITE_STATIC); }
