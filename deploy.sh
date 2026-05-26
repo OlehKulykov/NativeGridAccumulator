@@ -17,6 +17,7 @@ cd /dev/shm/nga/
 make -j4
 rc-service nga stop
 mv nga-d /usr/local/bin/
+mv nga-u /usr/local/bin/
 rc-service nga start
 cd ..
 rm -rf nga
