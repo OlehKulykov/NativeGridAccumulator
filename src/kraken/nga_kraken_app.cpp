@@ -212,7 +212,7 @@ namespace kraken {
                 db.insertReplace(closed);
                 removeOrder(data.orders, closed.clOrTxId());
                 _logger->log(loggerTypeInfo, "  Order created: %s", Order::description(createdMin).str().c_str());
-                _logger->log(loggerTypeInfo, "  Index rate: %s %%. Expected profit: %s", decimalToString(createdMin.price * Decimal(100) / closed.price).c_str(), data.calc->profit(createdMin, closed).description().c_str());
+                _logger->log(loggerTypeInfo, "  Index rate: %s %%. Expected profit: %s", decimalToString(createdMin.price * Decimal(100) / closed.price, 4).c_str(), data.calc->profit(createdMin, closed).description().c_str());
                 
                 DBOrder createdFull = fetchOpenOrder(createdMin.clientId); // delayed with attempts
                 createdFull.id = createdMin.id;
