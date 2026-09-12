@@ -403,14 +403,14 @@ namespace kraken {
             const size_t pairOrdersCount = it->second.orders.size();
             if (pairOrdersCount && it->second.enabled) {
                 std::stringstream pairStream;
-                pairStream << "  " << it->first << " (" << it->second.orders.size() << ") [ ";
+                pairStream << "  " << it->first << " (" << it->second.orders.size() << ") [";
                 for (size_t i = 0; i < pairOrdersCount; i++) {
                     if (i) {
                         pairStream << ", ";
                     }
                     pairStream << it->second.orders[i].id;
                 }
-                pairStream << " ]";
+                pairStream << ']';
                 _logger->log(loggerTypeInfo, pairStream.str().c_str());
             }
         }
