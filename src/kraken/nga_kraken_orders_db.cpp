@@ -108,7 +108,7 @@ namespace kraken {
     
     std::vector<DBOrder> OrdersDB::selectByStatuses(const OrderStatus status, ...) {
         std::vector<DBOrder> orders;
-        
+        //TODO: implement
         return orders;
     }
     
