@@ -353,6 +353,7 @@ namespace kraken {
     }
     
     void App::syncOrders() {
+        _logger->log(loggerTypeInfo, "Sync orders...");
         time_t earliestOpenTimestamp;
         OrdersDB db;
         {
@@ -396,9 +397,7 @@ namespace kraken {
                 }
             }
         }
-        
-        _logger->log(loggerTypeInfo, nullptr);
-        _logger->log(loggerTypeInfo, "Sync. Tracking orders count: %" PRIu64, openOrdersCount);
+        _logger->log(loggerTypeInfo, "Sync orders. Orders count: %" PRIu64, openOrdersCount);
         for (auto it = _datas.begin(); it != _datas.end(); it++) {
             const size_t pairOrdersCount = it->second.orders.size();
             if (pairOrdersCount && it->second.enabled) {
@@ -414,7 +413,7 @@ namespace kraken {
                 _logger->log(loggerTypeInfo, pairStream.str().c_str());
             }
         }
-        _logger->log(loggerTypeInfo, "Done.");
+        _logger->log(loggerTypeInfo, "Sync orders done.");
     }
     
     void App::syncConfig() {
@@ -497,6 +496,7 @@ namespace kraken {
     }
     
     void App::sync(Config && config) {
+        _logger->log(loggerTypeInfo, "Sync with config...");
         _api.reset();
         _ordersBDPath.clear();
         
@@ -521,6 +521,7 @@ namespace kraken {
         _updateOrdersInfoTicks = config.updateOrdersInfoTicks;
         
         sync(_datas, config.orderSettings);
+        _logger->log(loggerTypeInfo, "Sync with config done.");
     }
     
     void App::tick() noexcept {
