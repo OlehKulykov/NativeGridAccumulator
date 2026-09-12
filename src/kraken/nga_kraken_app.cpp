@@ -397,7 +397,7 @@ namespace kraken {
                 }
             }
         }
-        _logger->log(loggerTypeInfo, "Sync orders. Orders count: %" PRIu64, openOrdersCount);
+        _logger->log(loggerTypeInfo, "Orders count: %" PRIu64, openOrdersCount);
         for (auto it = _datas.begin(); it != _datas.end(); it++) {
             const size_t pairOrdersCount = it->second.orders.size();
             if (pairOrdersCount && it->second.enabled) {
