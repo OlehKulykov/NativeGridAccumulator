@@ -358,6 +358,7 @@ namespace kraken {
             earliestOpenTimestamp = earliestOrderOpenTimestamp(apiOpen);
             const time_t earliest = std::min<time_t>(earliestOpenTimestamp, earliestOrderOpenTimestamp(apiClosed));
             db.open(_ordersBDPath.c_str());
+            // db.selectByStatuses(OrderStatus::closed, OrderStatus::canceled, OrderStatus{0});
             auto merged = mergeOrders(std::move(apiOpen), std::move(apiClosed), db.selectFromCreateTimestamp(earliest));
             if (merged.first.size()) {
                 std::sort(merged.first.begin(), merged.first.end(), compareOrdersByOpenTimestamp<DBOrder>);

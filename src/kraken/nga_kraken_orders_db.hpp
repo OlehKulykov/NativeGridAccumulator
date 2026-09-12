@@ -25,6 +25,8 @@ namespace kraken {
         
         std::vector<DBOrder> selectFromCreateTimestamp(const int64_t fromTimestamp);
         
+        std::vector<DBOrder> selectByStatuses(const OrderStatus status, ...);
+        
         DBOrder selectById(const int64_t orderId);
         
         int64_t insert();

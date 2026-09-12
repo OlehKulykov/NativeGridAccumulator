@@ -8,6 +8,7 @@
  */
 
 #include <stdexcept>
+#include <format>
 
 #include "nga_kraken_types.hpp"
 #include "nga_kraken_decimal_utils.hpp"
