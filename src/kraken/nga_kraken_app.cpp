@@ -473,6 +473,10 @@ namespace kraken {
                     work(currentTimeMilli());
                 } catch (...) {
                     _logger->log(std::current_exception());
+                    _unsyncConfig = true;
+                    _unsyncOrders = true;
+                    _nextABITime = _nextUOITime = _nextCOTime = -1;
+                    _busy = false;
                 }
                 
                 lock.lock();
