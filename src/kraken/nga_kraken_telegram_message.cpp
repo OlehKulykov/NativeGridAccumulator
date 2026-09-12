@@ -60,7 +60,7 @@ namespace kraken {
         decimalToCString(profit.volume, buff0);
         decimalToCString(profit.cost, buff1);
         StringStream stream;
-//        stream << "<b>" << OrderTypeToKey(profit.from) << "→" << OrderTypeToKey(profit.to) << "</b> ";
+//        stream << "<b>"  << OrderTypeToKey(profit.from) << "→" << OrderTypeToKey(profit.to) << "</b> ";
 //        stream << "volume <code>" << buff0 << "</code> " << TokenToKey(keys.first) << " and cost <code>" << buff1 << "</code> " << TokenToKey(keys.second);
         return stream.str();
     }
