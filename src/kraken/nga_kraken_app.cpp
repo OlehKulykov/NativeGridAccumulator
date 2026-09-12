@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <format>
 #include <limits>
+#include <inttypes.h>
 #include <numeric>
 #include <chrono>
 
@@ -268,7 +269,9 @@ namespace kraken {
                     case OrderStatus::expired: {
                         auto it = _datas.find(dbOrder.pair);
                         if (it != _datas.end()) {
+                            const auto removedOrderDescr = DBOrder::description(dbOrder).str();
                             removeOrder(it->second.orders, dbOrder.clOrTxId());
+                            _logger->log(loggerTypeInfo, "Removed canceled | expired order: %s", removedOrderDescr.c_str());
                         }
                     } break;
                         
@@ -382,14 +385,36 @@ namespace kraken {
             it->second.orders.clear();
             it->second.orders.shrink_to_fit();
         }
+        
+        uint64_t openOrdersCount = 0;
         for (auto & dbOrder : dbOrders) {
             if (dbOrder.status == OrderStatus::open) {
                 auto it = _datas.find(dbOrder.pair);
                 if (it != _datas.end()) {
                     it->second.orders.emplace_back(std::move(dbOrder));
+                    openOrdersCount++;
                 }
             }
         }
+        
+        _logger->log(loggerTypeInfo, nullptr);
+        _logger->log(loggerTypeInfo, "Sync. Tracking orders count: %" PRIu64, openOrdersCount);
+        for (auto it = _datas.begin(); it != _datas.end(); it++) {
+            const size_t pairOrdersCount = it->second.orders.size();
+            if (pairOrdersCount && it->second.enabled) {
+                std::stringstream pairStream;
+                pairStream << "  " << it->first << " (" << it->second.orders.size() << ") [ ";
+                for (size_t i = 0; i < pairOrdersCount; i++) {
+                    if (i) {
+                        pairStream << ", ";
+                    }
+                    pairStream << it->second.orders[i].id;
+                }
+                pairStream << " ]";
+                _logger->log(loggerTypeInfo, pairStream.str().c_str());
+            }
+        }
+        _logger->log(loggerTypeInfo, "Done.");
     }
     
     void App::syncConfig() {
