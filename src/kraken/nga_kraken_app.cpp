@@ -271,6 +271,7 @@ namespace kraken {
                         if (it != _datas.end()) {
                             const auto removedOrderDescr = DBOrder::description(dbOrder).str();
                             removeOrder(it->second.orders, dbOrder.clOrTxId());
+                            _logger->log(loggerTypeInfo, nullptr);
                             _logger->log(loggerTypeInfo, "Removed canceled | expired order: %s", removedOrderDescr.c_str());
                         }
                     } break;
