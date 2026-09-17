@@ -382,23 +382,35 @@ namespace kraken {
             }
         }
         
-        auto dbOrders = db.selectFromCreateTimestamp(earliestOpenTimestamp);
         for (auto it = _datas.begin(); it != _datas.end(); it++) {
             it->second.orders.clear();
             it->second.orders.shrink_to_fit();
         }
         
-        uint64_t openOrdersCount = 0;
-        for (auto & dbOrder : dbOrders) {
-            if (dbOrder.status == OrderStatus::open) {
-                auto it = _datas.find(dbOrder.pair);
+        {
+            auto dbOrders = db.selectFromCreateTimestamp(earliestOpenTimestamp);
+            auto dbOpenOrders = db.selectByStatuses(OrderStatus::open, OrderStatus::pending, 0);
+            uint64_t openOrdersCount = 0;
+            for (auto & dbOrder : dbOrders) {
+                if ((dbOrder.status == OrderStatus::open) || (dbOrder.status == OrderStatus::pending)) {
+                    removeOrder(dbOpenOrders, dbOrder.clOrTxId());
+                    auto it = _datas.find(dbOrder.pair);
+                    if (it != _datas.end()) {
+                        it->second.orders.emplace_back(std::move(dbOrder));
+                        openOrdersCount++;
+                    }
+                }
+            }
+            for (auto & dbOpenOrder : dbOpenOrders) {
+                auto it = _datas.find(dbOpenOrder.pair);
                 if (it != _datas.end()) {
-                    it->second.orders.emplace_back(std::move(dbOrder));
+                    it->second.orders.emplace_back(std::move(dbOpenOrder));
                     openOrdersCount++;
                 }
             }
+            _logger->log(loggerTypeInfo, "Orders count: %" PRIu64, openOrdersCount);
         }
-        _logger->log(loggerTypeInfo, "Orders count: %" PRIu64, openOrdersCount);
+        
         for (auto it = _datas.begin(); it != _datas.end(); it++) {
             const size_t pairOrdersCount = it->second.orders.size();
             if (pairOrdersCount && it->second.enabled) {

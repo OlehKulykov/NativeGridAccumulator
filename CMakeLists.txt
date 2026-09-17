@@ -9,8 +9,8 @@ cmake_minimum_required(VERSION 3.31)
 
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
-set(CLIENT_VERSION_MINOR 14)
-set(CLIENT_VERSION_PATCH 9)
+set(CLIENT_VERSION_MINOR 15)
+set(CLIENT_VERSION_PATCH 0)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")

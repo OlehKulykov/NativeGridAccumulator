@@ -20,12 +20,15 @@ namespace nga {
 namespace kraken {
     
     class NGA_CPP_CLASS_API OrdersDB final : public SQLiteDB {
+    private:
+        static DBOrder orderFromStatement(struct sqlite3_stmt * NGA_NONNULL stmtPtr);
+        
     public:
         OrdersDB & open(const char * NGA_NONNULL path, const bool init = false);
         
         std::vector<DBOrder> selectFromCreateTimestamp(const int64_t fromTimestamp);
         
-        std::vector<DBOrder> selectByStatuses(const OrderStatus status, ...);
+        std::vector<DBOrder> selectByStatuses(OrderStatus status, ...);
         
         DBOrder selectById(const int64_t orderId);
         
