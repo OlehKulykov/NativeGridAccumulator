@@ -154,7 +154,7 @@ int main(int argc, const char * argv[]) {
     uv_timer_t timer;
     loop->data = timer.data = &app;
     ::uv_timer_init(loop, &timer);
-    ::uv_timer_start(&timer, onTick, 1000, 1000);
+    ::uv_timer_start(&timer, onTick, 4000, 1000);
     
     const int16_t signums[5] = { SIGHUP, SIGINT, SIGQUIT, SIGABRT, SIGTERM };
     uv_signal_t signals[5];

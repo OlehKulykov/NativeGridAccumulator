@@ -8,8 +8,10 @@
  */
 
 #include <stdexcept>
-#include <limits>
 #include <format>
+#include <limits>
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 
 #include "core/nga_file_utils.hpp"
@@ -50,13 +52,16 @@ namespace nga {
         
         auto & object = findObject(kraken, "order-settings", emptyObjectValue);
         for (auto it = object.MemberBegin(); it != object.MemberEnd(); ++it) {
-            
-            const auto pair = kraken::OHLCPairFromKey(it->name.GetString());
-            if (!it->value.IsObject() || (pair == kraken::OHLCPair{0})) {
+            const char * name = it->name.GetString();
+            if (!it->value.IsObject() || !name) {
                 continue;
             }
             
             kraken::OrderSettingsBase settings;
+            settings.name = name;
+            std::transform(settings.name.begin(), settings.name.end(), settings.name.begin(), [] (unsigned char c) {
+                return std::toupper(c);
+            });
             settings.sellVolumeRate = findString<Decimal>(it->value, "sell-volume-rate");
             settings.sellCostRate = findString<Decimal>(it->value, "sell-cost-rate");
             settings.buyVolumeRate = findString<Decimal>(it->value, "buy-volume-rate");
@@ -67,7 +72,7 @@ namespace nga {
             settings.lotDecimals = findNumber<unsigned>(it->value, "lot-decimals");
             settings.enabled = findBool(it->value, "enabled");
             
-            config.orderSettings[pair] = std::move(settings);
+            config.orderSettings[settings.name] = std::move(settings);
         }
         
         return config;

@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <format>
 #include <limits>
+#include <inttypes.h>
 #include <numeric>
 #include <chrono>
 
@@ -152,12 +153,12 @@ namespace kraken {
     DBOrder App::createInversed(const PairData & data, const DBOrder & closed, const DBOrder & parent) {
         const Decimal decZero(0);
         const bool isClosedValid =
+            (!closed.pair.empty()) &&
             (closed.volume > decZero) &&
             (closed.cost > decZero) &&
             (closed.fee >= decZero) &&
             (closed.price > decZero) &&
             (closed.type != OrderType{0}) &&
-            (closed.pair != OHLCPair{0}) &&
             (closed.status != OrderStatus{0});
         if (!isClosedValid) {
             throw std::logic_error(std::format("App: invalid order to create inversed: {}", Order::description(closed).str()));
@@ -212,7 +213,7 @@ namespace kraken {
                 db.insertReplace(closed);
                 removeOrder(data.orders, closed.clOrTxId());
                 _logger->log(loggerTypeInfo, "  Order created: %s", Order::description(createdMin).str().c_str());
-                _logger->log(loggerTypeInfo, "  Index rate: %s %%. Expected profit: %s", decimalToString(createdMin.price * Decimal(100) / closed.price).c_str(), data.calc->profit(createdMin, closed).description().c_str());
+                _logger->log(loggerTypeInfo, "  Index rate: %s %%. Expected profit: %s", decimalToString(createdMin.price * Decimal(100) / closed.price, 4).c_str(), data.calc->profit(createdMin, closed).description().c_str());
                 
                 DBOrder createdFull = fetchOpenOrder(createdMin.clientId); // delayed with attempts
                 createdFull.id = createdMin.id;
@@ -268,7 +269,10 @@ namespace kraken {
                     case OrderStatus::expired: {
                         auto it = _datas.find(dbOrder.pair);
                         if (it != _datas.end()) {
+                            const auto removedOrderDescr = DBOrder::description(dbOrder).str();
                             removeOrder(it->second.orders, dbOrder.clOrTxId());
+                            _logger->log(loggerTypeInfo, nullptr);
+                            _logger->log(loggerTypeInfo, "Removed canceled | expired order: %s", removedOrderDescr.c_str());
                         }
                     } break;
                         
@@ -331,7 +335,7 @@ namespace kraken {
         }
     }
     
-    void App::updateABI(PairData & data, const OHLCPair pair) {
+    void App::updateABI(PairData & data, const String & pair) {
         try {
             const auto ab = _api->fetchBestAskBid(pair);
             data.abi.first = ab.first;
@@ -350,6 +354,7 @@ namespace kraken {
     }
     
     void App::syncOrders() {
+        _logger->log(loggerTypeInfo, "Sync orders...");
         time_t earliestOpenTimestamp;
         OrdersDB db;
         {
@@ -377,19 +382,51 @@ namespace kraken {
             }
         }
         
-        auto dbOrders = db.selectFromCreateTimestamp(earliestOpenTimestamp);
         for (auto it = _datas.begin(); it != _datas.end(); it++) {
             it->second.orders.clear();
             it->second.orders.shrink_to_fit();
         }
-        for (auto & dbOrder : dbOrders) {
-            if (dbOrder.status == OrderStatus::open) {
-                auto it = _datas.find(dbOrder.pair);
-                if (it != _datas.end()) {
-                    it->second.orders.emplace_back(std::move(dbOrder));
+        
+        {
+            auto dbOrders = db.selectFromCreateTimestamp(earliestOpenTimestamp);
+            auto dbOpenOrders = db.selectByStatuses(OrderStatus::open, OrderStatus::pending, 0);
+            uint64_t openOrdersCount = 0;
+            for (auto & dbOrder : dbOrders) {
+                if ((dbOrder.status == OrderStatus::open) || (dbOrder.status == OrderStatus::pending)) {
+                    removeOrder(dbOpenOrders, dbOrder.clOrTxId());
+                    auto it = _datas.find(dbOrder.pair);
+                    if (it != _datas.end()) {
+                        it->second.orders.emplace_back(std::move(dbOrder));
+                        openOrdersCount++;
+                    }
                 }
             }
+            for (auto & dbOpenOrder : dbOpenOrders) {
+                auto it = _datas.find(dbOpenOrder.pair);
+                if (it != _datas.end()) {
+                    it->second.orders.emplace_back(std::move(dbOpenOrder));
+                    openOrdersCount++;
+                }
+            }
+            _logger->log(loggerTypeInfo, "Orders count: %" PRIu64, openOrdersCount);
         }
+        
+        for (auto it = _datas.begin(); it != _datas.end(); it++) {
+            const size_t pairOrdersCount = it->second.orders.size();
+            if (pairOrdersCount && it->second.enabled) {
+                std::stringstream pairStream;
+                pairStream << "  " << it->first << " (" << it->second.orders.size() << ") [";
+                for (size_t i = 0; i < pairOrdersCount; i++) {
+                    if (i) {
+                        pairStream << ", ";
+                    }
+                    pairStream << it->second.orders[i].id;
+                }
+                pairStream << ']';
+                _logger->log(loggerTypeInfo, pairStream.str().c_str());
+            }
+        }
+        _logger->log(loggerTypeInfo, "Sync orders done.");
     }
     
     void App::syncConfig() {
@@ -448,6 +485,10 @@ namespace kraken {
                     work(currentTimeMilli());
                 } catch (...) {
                     _logger->log(std::current_exception());
+                    _unsyncConfig = true;
+                    _unsyncOrders = true;
+                    _nextABITime = _nextUOITime = _nextCOTime = -1;
+                    _busy = false;
                 }
                 
                 lock.lock();
@@ -468,6 +509,7 @@ namespace kraken {
     }
     
     void App::sync(Config && config) {
+        _logger->log(loggerTypeInfo, "Sync with config...");
         _api.reset();
         _ordersBDPath.clear();
         
@@ -492,6 +534,7 @@ namespace kraken {
         _updateOrdersInfoTicks = config.updateOrdersInfoTicks;
         
         sync(_datas, config.orderSettings);
+        _logger->log(loggerTypeInfo, "Sync with config done.");
     }
     
     void App::tick() noexcept {
@@ -573,7 +616,7 @@ namespace kraken {
         return merged;
     }
     
-    void App::sync(std::map<OHLCPair, PairData> & datas, const std::map<OHLCPair, OrderSettingsBase> & settings) {
+    void App::sync(std::map<String, PairData> & datas, const std::map<String, OrderSettingsBase> & settings) {
         for (auto it = datas.begin(); it != datas.end(); ) {
             if (settings.contains(it->first)) {
                 it++;

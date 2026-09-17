@@ -13,19 +13,18 @@
 #include <cstddef>
 
 #include "nga_kraken_types.hpp"
+#include "nga_kraken_asset_pair_base.hpp"
 
 namespace nga {
 namespace kraken {
     
-    struct NGA_CPP_CLASS_API OrderSettingsBase {
+    struct NGA_CPP_CLASS_API OrderSettingsBase : public AssetPairBase {
         Decimal sellVolumeRate{-1};
         Decimal sellCostRate{-1};
         Decimal buyVolumeRate{-1};
         Decimal buyCostRate{-1};
         Decimal step{-1};
         Decimal fee{-1};
-        uint32_t pairDecimals{0};
-        uint32_t lotDecimals{0};
         bool enabled{false};
     };
     

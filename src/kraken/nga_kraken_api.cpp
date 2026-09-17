@@ -25,6 +25,22 @@
 namespace nga {
 namespace kraken {
     
+    ///@link https://docs.kraken.com/api/docs/rest-api/get-tradable-asset-pairs
+    std::vector<AssetPairBase> API::tradableAssetPairs() {
+        auto reusable = _reusable ? _reusable->get() : nullptr;
+        ScopeGuard guard([=] {
+            if (reusable) {
+                crypto::zeroFill(*reusable);
+            }
+        });
+        
+        auto json = requestPublic("AssetPairs",
+                                  std::move(reusable),
+                                  nullptr, nullptr);
+        
+        return parseTradableAssetPairs(json ? json->data() : nullptr);
+    }
+    
     ///@link https://docs.kraken.com/api/docs/rest-api/get-open-orders
     Order API::fetchOpenOrder(const String & clientOrderId) {
         auto reusable = _reusable ? _reusable->get() : nullptr;
@@ -106,7 +122,7 @@ namespace kraken {
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/get-order-book
-    AskBid API::fetchBestAskBid(const OHLCPair pair) {
+    AskBid API::fetchBestAskBid(const String & pair) {
         auto reusable = _reusable ? _reusable->get() : nullptr;
         ScopeGuard guard([=] {
             if (reusable) {
@@ -114,12 +130,13 @@ namespace kraken {
             }
         });
         
+        const char * pairCStr = pair.c_str() ?: emptyCString;
         auto json = requestPublic("Depth",
                                   std::move(reusable),
-                                  "pair", OHLCPairToKey(pair),
+                                  "pair", pairCStr,
                                   "count", "1", nullptr);
         
-        return parseBestAskBid(json ? json->data() : nullptr, pair);
+        return parseBestAskBid(json ? json->data() : nullptr, pairCStr);
     }
     
     ///@link https://docs.kraken.com/api/docs/rest-api/add-order
@@ -134,6 +151,7 @@ namespace kraken {
         const auto clientOrderId = generateClientOrderId();
         const char * type = (sourceOrder.type == OrderType::buy) ? orderTypeBuy : orderTypeSell;
         const char * validate = validateOnly ? "true" : "false";
+        const char * pair = sourceOrder.pair.c_str() ?: emptyCString;
         
         char volume[maxDecimalCStringLen], price[maxDecimalCStringLen];
         
@@ -146,7 +164,7 @@ namespace kraken {
                                    "oflags", "post",
                                    "type", type,
                                    "cl_ord_id", clientOrderId.data(),
-                                   "pair", OHLCPairToKey(sourceOrder.pair),
+                                   "pair", pair,
                                    "volume", static_cast<const char *>(volume),
                                    "price", static_cast<const char *>(price),
                                    "validate", validate, nullptr);
@@ -192,6 +210,7 @@ namespace kraken {
             throw std::invalid_argument("API: no order transaction or client identifier");
         }
         
+        const char * pair = sourceOrder.pair.c_str() ?: emptyCString;
         char orderQuantity[maxDecimalCStringLen], limitPrice[maxDecimalCStringLen];
         
         decimalToCString(sourceOrder.volume, orderQuantity);
@@ -202,7 +221,7 @@ namespace kraken {
                                    txidOrClOrdIdParam, txidOrClOrdIdValue,
                                    "order_qty", static_cast<const char *>(orderQuantity),
                                    "limit_price", static_cast<const char *>(limitPrice),
-                                   "pair", OHLCPairToKey(sourceOrder.pair),
+                                   "pair", pair,
                                    "post_only", "true", nullptr);
         
         const auto amendId = parseAmendOrderId(json ? json->data() : nullptr);
@@ -259,6 +278,33 @@ namespace kraken {
         return doc;
     }
     
+    std::vector<AssetPairBase> API::parseTradableAssetPairs(uint8_t * NGA_NULLABLE jsonData) {
+        if (!jsonData) {
+            return {};
+        }
+        
+        auto doc = APICreateDocument(jsonData);
+        auto & result = findObject(doc, "result", emptyObjectValue);
+        
+        std::vector<AssetPairBase> res;
+        res.reserve(result.MemberCount());
+        
+        for (auto it = result.MemberBegin(); it != result.MemberEnd(); ++it) {
+            const char * name = it->name.GetString();
+            if (name && it->value.IsObject()) {
+                AssetPairBase pair;
+                pair.name = name;
+                pair.base = findCString(it->value, "base", emptyCString);
+                pair.pairDecimals = findNumber<unsigned>(it->value, "pair_decimals", 0);
+                pair.lotDecimals = findNumber<unsigned>(it->value, "lot_decimals", 0);
+                pair.status = AssetPairStatusFromKey(findCString(it->value, "status", emptyCString));
+                res.emplace_back(std::move(pair));
+            }
+        }
+        
+        return res;
+    }
+    
     std::vector<Order> API::parseOrders(uint8_t * NGA_NULLABLE jsonData, const char * NGA_NONNULL orderStatus) {
         if (!jsonData) {
             return {};
@@ -290,8 +336,8 @@ namespace kraken {
                 order.price = findString<Decimal>(it->value, "price");
                 
                 auto & descr = findObject(it->value, "descr");
-                order.pair = OHLCPairFromKey(findCString(descr, "pair"));
-                if (order.pair == OHLCPair{0}) {
+                order.pair = findCString(descr, "pair");
+                if (order.pair.empty()) {
                     continue;
                 }
                 
@@ -312,7 +358,7 @@ namespace kraken {
         return res;
     }
     
-    AskBid API::parseBestAskBid(uint8_t * NGA_NULLABLE jsonData, const OHLCPair aPair) {
+    AskBid API::parseBestAskBid(uint8_t * NGA_NULLABLE jsonData, const char * aPair) {
         AskBid res(-1, -1);
         if (!jsonData) {
             return res;
@@ -320,7 +366,7 @@ namespace kraken {
         
         auto doc = APICreateDocument(jsonData);
         auto & result = findObject(doc, "result");
-        auto & book = findObject(result, OHLCPairToKey(aPair));
+        auto & book = findObject(result, aPair);
         auto & asks = findArray(book, "asks");
         auto & bids = findArray(book, "bids");
         

@@ -54,18 +54,6 @@
 #  define NGA_NONNULL
 #endif
 
-#if !defined(__has_include)
-#  define __has_include(x) 0
-#endif
-
-#if !defined(__has_attribute)
-#  define __has_attribute(x) 0
-#endif
-
-#if !defined(__has_feature)
-#  define __has_feature(x) 0
-#endif
-
 #if __has_attribute(sentinel)
 #  define NGA_REQUIRES_LAST_NULL_ARG __attribute__((sentinel))
 #else
