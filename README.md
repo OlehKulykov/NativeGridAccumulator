@@ -52,6 +52,10 @@ Built with **C++20** (with C11 components) and managed via **CMake**.
 * System-installed `openssl` and `libcurl` development libraries
 
 ### Build Steps
+<<<<<<< HEAD
+
+=======
+>>>>>>> tmp
 ```bash
 # Clone the repository
 git clone https://github.com/OlehKulykov/NativeGridAccumulator.git
@@ -66,6 +70,8 @@ make
 ```
 
 ---
+<<<<<<< HEAD
+=======
 ## 🏁 Quick Start & Kraken Setup Guide
 To start using **NativeGridAccumulator**, follow these steps to prepare your Kraken account and initialize your first grid orders.
 
@@ -116,6 +122,7 @@ How you can leverage manual adjustments:
 Order Type & Execution: Always ensure manually edited or placed replacement orders strictly maintain the **LIMIT** type and **POST (Post-Only)** option to avoid unexpected market execution and excessive taker fees.
 
 ⚠️ **Personal Responsibility:** The bot gracefully detects manual price/index changes, updates its SQLite3 state, and uses the newly executed values to calculate the subsequent mirror order. However, all manual interventions and market risks remain entirely under your personal responsibility.
+>>>>>>> tmp
 
 ## ⚙️ Configuration
 
