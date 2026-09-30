@@ -1,3 +1,5 @@
+<img src="nga_logo.svg" alt="NativeGridAccumulator Logo" width="64" align="left" />
+
 # NativeGridAccumulator
 
 [![CMake on multiple platforms](https://github.com/OlehKulykov/NativeGridAccumulator/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/OlehKulykov/NativeGridAccumulator/actions/workflows/cmake-multi-platform.yml)
