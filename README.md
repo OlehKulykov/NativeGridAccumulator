@@ -52,7 +52,6 @@ Built with **C++20** (with C11 components) and managed via **CMake**.
 * System-installed `openssl` and `libcurl` development libraries
 
 ### Build Steps
-
 ```bash
 # Clone the repository
 git clone https://github.com/OlehKulykov/NativeGridAccumulator.git
@@ -67,6 +66,57 @@ make
 ```
 
 ---
+## 🏁 Quick Start & Kraken Setup Guide
+To start using **NativeGridAccumulator**, follow these steps to prepare your Kraken account and initialize your first grid orders.
+
+### Step 1: Prepare Your Kraken Account
+1. **Create an Account**: Register a free account at [Kraken.com](https://www.kraken.com/) and complete the identity verification process.
+2. **Switch to Pro View**: Navigate to [Kraken Pro](https://pro.kraken.com/) interface (or switch your account mode to Pro) to access API settings and advanced order placement.
+
+### Step 2: Generate API Keys
+1. Go to **Security** -> **API** in your Kraken account settings.
+2. Create a new API key with the following permissions:
+   * **Query Funds** / **Query Open Orders & Trades**
+   * **Create & Modify Orders** / **Cancel Orders**
+3. Copy your **API Key** and **Private Key** (Secret) and paste them into your `config.json`:
+   ```json
+   "api-key": "<YOUR_KRAKEN_API_KEY>",
+   "private-key": "<YOUR_KRAKEN_PRIVATE_KEY>"
+   ```
+
+### Step 3: Choose Trading Pair & Create Initial Orders
+The bot logic relies on monitoring existing active limit orders to place mirror orders when they fill.
+
+Select a Trading Pair: Pick your preferred pair, example: ETH/USDC
+
+Place Initial Orders: In the Kraken Pro interface, manually place your initial Limit orders (Buy or Sell) for your selected pair.
+
+⚠️ **IMPORTANT:** When creating initial orders manually, ensure the order method/type is strictly set to **POST (or Post-Only)** and the type is **Limit**. This guarantees your orders are added to the order book as liquidity maker orders without immediate unexpected taker execution.
+
+### Step 4: Configure Pair Settings
+Add the parameters for your chosen pair under order-settings in config.json. See section **Configuration** below.
+
+### Step 5: Start or Restart the Service
+Launch or restart the service daemon so it loads the updated configuration and begins monitoring your active active orders.
+
+ℹ️ Good to Know: Startup & Self-Healing Sync
+Upon startup, the service automatically performs a 3-way synchronization between your local SQLite3 database, your active open orders (via Kraken API), and your recently closed orders (via Kraken API).
+
+All monitored cryptocurrency trading pairs and their active order IDs are stored and updated in SQLite3 and explicitly logged in your ```service.log``` file. If network disruptions occur or the Kraken API becomes temporarily unavailable, the synchronization process will automatically restart once connection is restored, resuming normal operation seamlessly (check the ```service.log``` for details).
+
+⚠️ **CRITICAL: Manual Order Modifications & Trader Responsibility**
+The bot real-time tracks, logs, and persists any manual order adjustments you make directly on Kraken (e.g., via the Spot Trading UI).
+
+How you can leverage manual adjustments:
+
+For Sell Orders: If you anticipate a market surge, you can manually drag or edit an automatically generated Sell order higher in the Kraken UI (setting a higher price for the same volume) to capture even greater profit.
+
+For Buy Orders: Conversely, if you expect the price to dip even lower, you can drag your Buy order further down. This allows you to accumulate a larger volume of cryptocurrency for the same calculated order amount.
+
+**Important Rules for Manual Adjustments:**
+Order Type & Execution: Always ensure manually edited or placed replacement orders strictly maintain the **LIMIT** type and **POST (Post-Only)** option to avoid unexpected market execution and excessive taker fees.
+
+**Personal Responsibility:** The bot gracefully detects manual price/index changes, updates its SQLite3 state, and uses the newly executed values to calculate the subsequent mirror order. However, all manual interventions and market risks remain entirely under your personal responsibility.
 
 ## ⚙️ Configuration
 
