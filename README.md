@@ -70,6 +70,8 @@ make
 
 The service uses a single JSON configuration file to manage API keys, polling intervals, and trading pair rules.
 
+Both Kraken's ```pair-decimals``` and ```lot-decimals``` values for ```ETHUSDC``` pair can be found following [Market Data / Get Tradable Asset Pairs](https://docs.kraken.com/api-reference/market-data/get-tradable-asset-pairs/) or buy using **nga-u** utility application.
+
 ### Example `config.json`
 ```json
 {
@@ -79,9 +81,9 @@ The service uses a single JSON configuration file to manage API keys, polling in
         "check-orders-tick-range": [20000, 30000],
         "update-ask-bid-tick-range": [60000, 120000],
         "update-orders-info-tick-range": [180000, 300000],
-        "orders-db-file": "/var/lib/nativegrid/krkn.orders.sqlite",
+        "orders-db-file": "/var/lib/nga/krkn.orders.sqlite",
         "order-settings": {
-            "ETHUSDC": {
+            "ETHUSDC": {                       // https://api.kraken.com/0/public/AssetPairs?info=info&pair=ETHUSDC
                 "sell-volume-rate": "0.995",   // -0.5% ETH volume (99.5%)
                 "sell-cost-rate":   "1.005",   // +0.5% USDC cost (100.5%)
                 "buy-volume-rate":  "1.005",   // +0.5% ETH volume (100.5%)
@@ -92,16 +94,17 @@ The service uses a single JSON configuration file to manage API keys, polling in
                 "lot-decimals":     8,         // Lot decimals (ETH_*)
                 "enabled":          true
             }
+            // , "<MY_FAVOURITE_PAIR>": { ... }
         }
     },
 
     "telegram": {
         "api-key": "<TELEGRAM API BOT KEY>",
-        "chat-id": "@<YOUR_CHAT_OR_CHANNEL_NAME>"
+        "chat-id": "@<YOUR_CHAT_OR_CHANNEL_ID>"
     },
 
-    "log-file": "/var/log/nativegrid/service.log",
-    "pid-file": "/var/run/nativegrid.pid"
+    "log-file": "/var/log/nga/service.log",
+    "pid-file": "/var/run/nga.pid"
 }
 
 ```
