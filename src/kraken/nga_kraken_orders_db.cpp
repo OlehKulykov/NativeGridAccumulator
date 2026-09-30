@@ -87,8 +87,8 @@ namespace kraken {
     
     std::vector<DBOrder> OrdersDB::selectByStatuses(OrderStatus status, ...) {
         FixedStringStream<127> stream;
+        stream << "SELECT " << '*' << " FROM " << "orders" << " WHERE " << "status" << " IN(";
         {
-            stream << "SELECT " << '*' << " FROM " << "orders" << " WHERE " << "status" << " IN(" ;
             va_list argsList;
             bool needSeparator = false;
             va_start(argsList, status);
@@ -101,8 +101,8 @@ namespace kraken {
                 needSeparator = true;
             } while (static_cast<size_t>(status) > 0);
             va_end(argsList);
-            stream << ");";
         }
+        stream << ");";
         
         auto stmt = prepare(stream);
         std::vector<DBOrder> orders;
