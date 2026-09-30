@@ -118,12 +118,6 @@ namespace kraken {
         return orders;
     }
     
-    std::vector<DBOrder> OrdersDB::selectByStatuses(const OrderStatus status, ...) {
-        std::vector<DBOrder> orders;
-        //TODO: implement
-        return orders;
-    }
-    
     DBOrder OrdersDB::selectById(const int64_t orderId) {
         FixedStringStream<127> stream;
         stream << "SELECT " << '*' << " FROM " << "orders" << " WHERE " << "id" << " = ?;";
