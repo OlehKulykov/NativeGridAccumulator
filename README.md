@@ -109,13 +109,13 @@ The bot real-time tracks, logs, and persists any manual order adjustments you ma
 
 How you can leverage manual adjustments:
 
-* For Sell Orders: If you anticipate a market surge, you can manually drag or edit an automatically generated Sell order higher in the Kraken UI (setting a higher price for the same volume) to capture even greater profit.
-* For Buy Orders: Conversely, if you expect the price to dip even lower, you can drag your Buy order further down. This allows you to accumulate a larger volume of cryptocurrency for the same calculated order amount.
+* For **Sell** Orders: If you anticipate a market surge, you can manually drag or edit an automatically generated Sell order higher in the Kraken UI (setting a higher price for the same volume) to capture even greater profit.
+* For **Buy** Orders: Conversely, if you expect the price to dip even lower, you can drag your Buy order further down. This allows you to accumulate a larger volume of cryptocurrency for the same calculated order amount.
 
 ⚠️ **Important Rules for Manual Adjustments:**
-Order Type & Execution: Always ensure manually edited or placed replacement orders strictly maintain the **LIMIT** type and **POST (Post-Only)** option to avoid unexpected market execution and excessive taker fees.
+* **Order Type & Execution**: Always ensure manually edited or placed replacement orders strictly maintain the **LIMIT** type and **POST (Post-Only)** option to avoid unexpected market execution and excessive taker fees.
 
-⚠️ **Personal Responsibility:** The bot gracefully detects manual price/index changes, updates its SQLite3 state, and uses the newly executed values to calculate the subsequent mirror order. However, all manual interventions and market risks remain entirely under your personal responsibility.
+* **Personal Responsibility:** The bot gracefully detects manual price/index changes, updates its SQLite3 state, and uses the newly executed values to calculate the subsequent mirror order. However, all manual interventions and market risks remain entirely under your personal responsibility.
 
 ## ⚙️ Configuration
 
