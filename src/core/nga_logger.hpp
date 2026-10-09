@@ -11,6 +11,8 @@
 #define __NGA_LOGGER_HPP__ 1
 
 #include <mutex>
+#include <filesystem>
+#include <atomic>
 #include <stdexcept>
 #include <cstdio>
 #include <cstdarg>
@@ -53,6 +55,26 @@ namespace nga {
         static void systemLog(const char * NGA_NULLABLE type, const char * NGA_NONNULL format, ...) noexcept;
     };
 
+    class DemandLogger final : public Logger {
+    private:
+        std::atomic<int> _openCounter = 0;
+        std::filesystem::path _path;
+        
+        virtual void open(const int fd) override final {
+            Logger::open(fd);
+        }
+        
+    public:
+        virtual void open(const char * NGA_NONNULL path) override final;
+        
+        virtual void close() noexcept override final;
+        
+        void reopen();
+        
+        DemandLogger() noexcept = default;
+        virtual ~DemandLogger() noexcept = default;
+    };
+    
 } // namespace nga
 
 #endif //!__NGA_LOGGER_HPP__

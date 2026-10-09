@@ -153,4 +153,32 @@ namespace nga {
         va_end(vaList);
     }
     
+    void DemandLogger::open(const char * NGA_NONNULL path) {
+        if (_openCounter.fetch_add(1) == 0) {
+            Logger::open(path);
+            _path = path;
+        }
+    }
+    
+    void DemandLogger::close() noexcept {
+        switch (_openCounter.fetch_sub(1)) {
+            case 0:
+                _openCounter = 0;
+                break;
+                
+            case 1:
+                _close();
+                break;
+                
+            default:
+                break;
+        }
+    }
+    
+    void DemandLogger::reopen() {
+        if (_openCounter.fetch_add(1) == 0) {
+            Logger::open(_path.c_str());
+        }
+    }
+    
 } // namespace nga

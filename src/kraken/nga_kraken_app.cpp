@@ -546,7 +546,7 @@ namespace kraken {
         }
     }
     
-    void App::init(Config && config, const std::shared_ptr<Logger> & logger) {
+    void App::init(Config && config, const std::shared_ptr<DemandLogger> & logger) {
         if (_working) {
             throw std::logic_error("App: already initialized");
         }
