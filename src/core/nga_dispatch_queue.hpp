@@ -24,7 +24,7 @@ namespace nga {
     
     typedef std::function<void(void)> DispatchTask; // void(size_t)
     
-    class DispatchQueue final {
+    class NGA_CPP_CLASS_API DispatchQueue final {
     private:
         std::condition_variable _conditionVariable;
         std::mutex _mutex;

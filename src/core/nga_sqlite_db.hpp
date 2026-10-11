@@ -19,7 +19,7 @@ struct sqlite3_stmt;
 
 namespace nga {
     
-    class SQLiteDB {
+    class NGA_CPP_CLASS_API SQLiteDB {
     protected:
         struct DBDeleter final {
             void operator()(struct sqlite3 * NGA_NULLABLE db) const noexcept;

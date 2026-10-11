@@ -17,7 +17,7 @@
 #include <atomic>
 #include <map>
 
-#include "../core/nga_logger.hpp"
+#include "../core/nga_demand_logger.hpp"
 #include "nga_kraken_config.hpp"
 #include "nga_kraken_db_order.hpp"
 #include "nga_kraken_order_settings_base.hpp"

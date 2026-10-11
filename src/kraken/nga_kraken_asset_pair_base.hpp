@@ -15,7 +15,7 @@
 namespace nga {
 namespace kraken {
     
-    struct AssetPairBase {
+    struct NGA_CPP_CLASS_API AssetPairBase {
         String name;
         String base;
         uint32_t pairDecimals{0};

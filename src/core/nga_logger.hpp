@@ -27,7 +27,7 @@ namespace nga {
     NGA_CPP_API_PRIVATE(const char * NGA_NONNULL const) loggerTypeWarning;
     NGA_CPP_API_PRIVATE(const char * NGA_NONNULL const) loggerTypeDebug;
     
-    class Logger {
+    class NGA_CPP_CLASS_API Logger {
     protected:
         mutable std::mutex _mutex;
         int _fd = -1;
@@ -53,26 +53,6 @@ namespace nga {
         virtual ~Logger() noexcept;
         
         static void systemLog(const char * NGA_NULLABLE type, const char * NGA_NONNULL format, ...) noexcept;
-    };
-
-    class DemandLogger final : public Logger {
-    private:
-        std::atomic<int> _openCounter = 0;
-        std::filesystem::path _path;
-        
-        virtual void open(const int fd) override final {
-            Logger::open(fd);
-        }
-        
-    public:
-        virtual void open(const char * NGA_NONNULL path) override final;
-        
-        virtual void close() noexcept override final;
-        
-        void reopen();
-        
-        DemandLogger() noexcept = default;
-        virtual ~DemandLogger() noexcept = default;
     };
     
 } // namespace nga
