@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 - 2026 Oleh Kulykov <olehkulykov@gmail.com>
+ * Copyright (C) 2026 Oleh Kulykov <olehkulykov@gmail.com>
  * All Rights Reserved.
  *
  * Unauthorized copying of this file, transferring or reproduction of the
