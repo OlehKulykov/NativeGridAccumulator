@@ -128,7 +128,7 @@ namespace kraken {
         
         if (isParentValid) {
             if (closedSell.volume > parentBuy.volume) { // usecase: modified outside
-                _logger->log(loggerTypeInfo, "  Using closed volume, parent: %s, closed: %s", decimalToString(parentBuy.volume).c_str(), decimalToString(closedSell.volume).c_str());
+                _logger->log(loggerTypeInfo, "  Using closed volume: %s, parent: %s", decimalToString(closedSell.volume).c_str(), decimalToString(parentBuy.volume).c_str());
                 volume = closedSell.volume * data.buyVolumeRate;
             } else {
                 volume = parentBuy.volume * data.buyVolumeRate;
