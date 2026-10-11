@@ -17,7 +17,7 @@
 
 namespace nga {
     
-    class CURLRequest {
+    class NGA_CPP_CLASS_API CURLRequest {
     public:
         static std::shared_ptr<crypto::ZeroFillDataVector> GET(const char * NGA_NONNULL url,
                                                                const char * NGA_NULLABLE headers[NGA_NONNULL] = nullptr,

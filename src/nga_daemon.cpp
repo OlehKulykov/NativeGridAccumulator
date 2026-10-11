@@ -32,7 +32,7 @@ typedef std::pair<off_t, time_t> FSStat;
 
 struct App final {
     std::unique_ptr<nga::kraken::App> krakenApp;
-    std::shared_ptr<nga::Logger> logger;
+    std::shared_ptr<nga::DemandLogger> logger;
     const char * configPath;
     uv_fs_event_t configEvent;
     FSStat configStat;
@@ -129,7 +129,7 @@ int main(int argc, const char * argv[]) {
         nga::Config config;
         config.load(app.configPath);
         
-        auto logger = std::make_shared<nga::Logger>();
+        auto logger = std::make_shared<nga::DemandLogger>();
         logger->open(config.logFilePath().c_str());
         nga::file::stdioToDevNull();
         

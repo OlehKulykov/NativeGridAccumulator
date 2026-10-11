@@ -127,7 +127,12 @@ namespace kraken {
         Decimal volume;
         
         if (isParentValid) {
-            volume = parentBuy.volume * data.buyVolumeRate;
+            if (closedSell.volume > parentBuy.volume) { // usecase: modified outside
+                _logger->log(loggerTypeInfo, "  Using closed volume, parent: %s, closed: %s", decimalToString(parentBuy.volume).c_str(), decimalToString(closedSell.volume).c_str());
+                volume = closedSell.volume * data.buyVolumeRate;
+            } else {
+                volume = parentBuy.volume * data.buyVolumeRate;
+            }
         } else {
             volume = closedSell.volume * data.buyVolumeRate;
         }
@@ -546,7 +551,7 @@ namespace kraken {
         }
     }
     
-    void App::init(Config && config, const std::shared_ptr<Logger> & logger) {
+    void App::init(Config && config, const std::shared_ptr<DemandLogger> & logger) {
         if (_working) {
             throw std::logic_error("App: already initialized");
         }
