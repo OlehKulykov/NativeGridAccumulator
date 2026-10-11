@@ -142,7 +142,7 @@ namespace kraken {
         if ((data.abi.second > decZero) && (data.abi.second < nextInfo.first)) {
             const auto calculated = decimalToString(nextInfo.first);
             nextInfo.first = data.abi.second;
-            _logger->log(loggerTypeDebug, "  Using best bid, calculated: %s, best: %s", calculated.c_str(), decimalToString(nextInfo.first).c_str()); // Price/fee might be changed
+            _logger->log(loggerTypeDebug, "  Using best bid: %s, calculated: %s", decimalToString(nextInfo.first).c_str(), calculated.c_str()); // Price/fee might be changed
         }
         
         Order buyOrder;
