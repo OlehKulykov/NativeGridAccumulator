@@ -99,7 +99,7 @@ namespace kraken {
         if ((data.abi.first > decZero) && (data.abi.first > nextInfo.first)) {
             const auto calculated = decimalToString(nextInfo.first);
             nextInfo.first = data.abi.first;
-            _logger->log(loggerTypeDebug, "  Using best ask, calculated: %s, best: %s", calculated.c_str(), decimalToString(nextInfo.first).c_str()); // Price/fee might be changed
+            _logger->log(loggerTypeDebug, "  Using best ask: %s instead of calculated: %s", decimalToString(nextInfo.first).c_str(), calculated.c_str()); // Price/fee might be changed
         }
         
         Order sellOrder;
@@ -128,7 +128,7 @@ namespace kraken {
         
         if (isParentValid) {
             if (closedSell.volume > parentBuy.volume) { // usecase: modified outside
-                _logger->log(loggerTypeInfo, "  Using closed volume: %s, parent: %s", decimalToString(closedSell.volume).c_str(), decimalToString(parentBuy.volume).c_str());
+                _logger->log(loggerTypeInfo, "  Using closed volume: %s instead of parent: %s", decimalToString(closedSell.volume).c_str(), decimalToString(parentBuy.volume).c_str());
                 volume = closedSell.volume * data.buyVolumeRate;
             } else {
                 volume = parentBuy.volume * data.buyVolumeRate;
@@ -142,7 +142,7 @@ namespace kraken {
         if ((data.abi.second > decZero) && (data.abi.second < nextInfo.first)) {
             const auto calculated = decimalToString(nextInfo.first);
             nextInfo.first = data.abi.second;
-            _logger->log(loggerTypeDebug, "  Using best bid: %s, calculated: %s", decimalToString(nextInfo.first).c_str(), calculated.c_str()); // Price/fee might be changed
+            _logger->log(loggerTypeDebug, "  Using best bid: %s instead of calculated: %s", decimalToString(nextInfo.first).c_str(), calculated.c_str()); // Price/fee might be changed
         }
         
         Order buyOrder;
