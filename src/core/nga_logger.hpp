@@ -11,6 +11,8 @@
 #define __NGA_LOGGER_HPP__ 1
 
 #include <mutex>
+#include <filesystem>
+#include <atomic>
 #include <stdexcept>
 #include <cstdio>
 #include <cstdarg>
@@ -25,8 +27,8 @@ namespace nga {
     NGA_CPP_API_PRIVATE(const char * NGA_NONNULL const) loggerTypeWarning;
     NGA_CPP_API_PRIVATE(const char * NGA_NONNULL const) loggerTypeDebug;
     
-    class Logger final {
-    private:
+    class NGA_CPP_CLASS_API Logger {
+    protected:
         mutable std::mutex _mutex;
         int _fd = -1;
         
@@ -42,17 +44,17 @@ namespace nga {
         void log(const std::exception & exception) const noexcept;
         void log(std::exception_ptr exception) const noexcept;
         
-        void open(const int fd);
-        void open(const char * NGA_NONNULL path);
+        virtual void open(const int fd);
+        virtual void open(const char * NGA_NONNULL path);
         
-        void close() noexcept;
+        virtual void close() noexcept;
         
         Logger() noexcept = default;
-        ~Logger() noexcept;
+        virtual ~Logger() noexcept;
         
         static void systemLog(const char * NGA_NULLABLE type, const char * NGA_NONNULL format, ...) noexcept;
     };
-
+    
 } // namespace nga
 
 #endif //!__NGA_LOGGER_HPP__

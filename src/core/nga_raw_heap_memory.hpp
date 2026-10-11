@@ -16,7 +16,7 @@
 
 namespace nga {
 
-    struct RawHeapMemory final {
+    struct NGA_CPP_CLASS_API RawHeapMemory final {
     private:
         friend class Data;
 #if defined(DEBUG)

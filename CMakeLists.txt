@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.31)
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
 set(CLIENT_VERSION_MINOR 15)
-set(CLIENT_VERSION_PATCH 1)
+set(CLIENT_VERSION_PATCH 2)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -364,6 +364,7 @@ set(NGA_CORE_HEADERS
   src/core/nga_c_string.h
   src/core/nga_crypto.hpp
   src/core/nga_curl_request.hpp
+  src/core/nga_demand_logger.hpp
   src/core/nga_dispatch_queue.hpp
   src/core/nga_file_utils.hpp
   src/core/nga_fixed_string_stream.hpp
@@ -392,6 +393,7 @@ set(NGA_CORE_SOURCES
   src/core/nga_c_string.c
   src/core/nga_crypto.cpp
   src/core/nga_curl_request.cpp
+  src/core/nga_demand_logger.cpp
   src/core/nga_dispatch_queue.cpp
   src/core/nga_file_utils.cpp
   src/core/nga_http.cpp
@@ -473,6 +475,8 @@ source_group("core"
   src/core/nga_crypto.hpp
   src/core/nga_curl_request.cpp
   src/core/nga_curl_request.hpp
+  src/core/nga_demand_logger.cpp
+  src/core/nga_demand_logger.hpp
   src/core/nga_dispatch_queue.cpp
   src/core/nga_dispatch_queue.hpp
   src/core/nga_file_utils.cpp

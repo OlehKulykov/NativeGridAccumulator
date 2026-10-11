@@ -17,7 +17,7 @@
 #include <atomic>
 #include <map>
 
-#include "../core/nga_logger.hpp"
+#include "../core/nga_demand_logger.hpp"
 #include "nga_kraken_config.hpp"
 #include "nga_kraken_db_order.hpp"
 #include "nga_kraken_order_settings_base.hpp"
@@ -50,7 +50,7 @@ namespace kraken {
         std::mutex _mutex;
         std::thread _thread;
         std::condition_variable _condition;
-        std::shared_ptr<Logger> _logger;
+        std::shared_ptr<DemandLogger> _logger;
         std::shared_ptr<ReusableMT<DataVector> > _reusable;
         std::map<String, PairData> _datas;
         String _ordersBDPath;
@@ -96,7 +96,7 @@ namespace kraken {
         
     public:
         void tick() noexcept;
-        void init(Config &&, const std::shared_ptr<Logger> &);
+        void init(Config &&, const std::shared_ptr<DemandLogger> &);
         
         void onChanged(Config &&) noexcept;
         void onExit() noexcept;

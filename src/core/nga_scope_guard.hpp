@@ -14,7 +14,7 @@
 
 namespace nga {
     
-    class ScopeGuard final {
+    class NGA_CPP_CLASS_API ScopeGuard final {
     private:
         std::function<void()> _defer;
         
