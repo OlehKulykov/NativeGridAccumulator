@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.31)
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
 set(CLIENT_VERSION_MINOR 15)
-set(CLIENT_VERSION_PATCH 2)
+set(CLIENT_VERSION_PATCH 3)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -265,7 +265,7 @@ set(BOOST_INCLUDE_LIBRARIES decimal)
 set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(boost_decimal
   GIT_REPOSITORY https://github.com/boostorg/decimal.git
-  GIT_TAG        59d79cbe1edde0428606187cdca1477315a55f37 # Release:  boost-1.91.0
+  GIT_TAG        58c7cca6b0a7d80884428315d80de3ac7254d396 # Release:  boost-1.92.0
   SYSTEM
   OVERRIDE_FIND_PACKAGE
 )
@@ -275,7 +275,7 @@ set(Boost_USE_MULTITHREADED ON CACHE BOOL "")
 set(BOOST_ENABLE_PYTHON OFF CACHE BOOL "")
 message("-- Found Boost include: ${BOOST_INCLUDE_LIBRARIES}")
 FetchContent_MakeAvailable(boost_decimal)
-find_package(boost_decimal 1.91.0 EXACT REQUIRED)
+find_package(boost_decimal 1.92.0 EXACT REQUIRED)
 
 # RapidJSON
 FetchContent_Declare(RapidJSON
