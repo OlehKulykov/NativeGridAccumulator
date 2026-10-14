@@ -101,10 +101,9 @@ namespace telegram {
         sendMessageJSON(json);
     }
     
-    void Bot::send(MessageBase && message) const {
+    void Bot::send(const MessageBase & message) const {
         if (!message.empty()) {
             sendMessageText(combineMessageBlocks(message._blocks));
-            message._blocks.clear();
         }
     }
     

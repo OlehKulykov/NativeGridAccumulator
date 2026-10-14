@@ -31,8 +31,8 @@ namespace nga {
     protected:
         mutable std::mutex _mutex;
         std::filesystem::path _path;
-        int _openCounter = 0;
-        int _fd = -1;
+        int _openCounter{0};
+        int _fd{-1};
         
         void _open(const char * NGA_NONNULL path);
         void _close() noexcept;

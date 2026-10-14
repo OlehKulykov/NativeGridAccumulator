@@ -23,6 +23,7 @@
 #include "nga_kraken_order_settings_base.hpp"
 #include "nga_kraken_icalc.hpp"
 #include "nga_kraken_api.hpp"
+#include "nga_kraken_telegram_message.hpp"
 #include "../telegram/nga_telegram_config.hpp"
 #include "../telegram/nga_telegram_bot.hpp"
 

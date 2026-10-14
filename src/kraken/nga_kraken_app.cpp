@@ -197,6 +197,7 @@ namespace kraken {
         ScopeGuard lock([this] {
             _logger->close(false);
         });
+        std::vector<std::unique_ptr<TelegramMessage> > messages;
         OrdersDB db;
         db.open(_ordersBDPath.c_str());
         for (const auto & pair : closedPairs) {
@@ -215,6 +216,11 @@ namespace kraken {
                 _logger->log(loggerTypeInfo, "  Parent: %s", DBOrder::description(parent).str().c_str());
                 _logger->log(loggerTypeInfo, "  Profit: %s", data.calc->profit(closed, parent).description().c_str());
             }
+            if (_telegramBot) {
+                auto message = std::make_unique<TelegramMessage>();
+                message->onClosed(closed);
+                messages.emplace_back(std::move(message));
+            }
             
             try {
                 updateABI(data, closed.pair);
@@ -222,8 +228,9 @@ namespace kraken {
                 createdMin.id = db.insert(createdMin);
                 db.insertReplace(closed);
                 removeOrder(data.orders, closed.clOrTxId());
+                const auto indexRate = createdMin.price * Decimal(100) / closed.price;
                 _logger->log(loggerTypeInfo, "  Order created: %s", Order::description(createdMin).str().c_str());
-                _logger->log(loggerTypeInfo, "  Index rate: %s %%. Expected profit: %s", decimalToString(createdMin.price * Decimal(100) / closed.price, 4).c_str(), data.calc->profit(createdMin, closed).description().c_str());
+                _logger->log(loggerTypeInfo, "  Index rate: %s %%. Expected profit: %s", decimalToString(indexRate, 4).c_str(), data.calc->profit(createdMin, closed).description().c_str());
                 
                 DBOrder createdFull = fetchOpenOrder(createdMin.clientId); // delayed with attempts
                 createdFull.id = createdMin.id;
@@ -232,12 +239,23 @@ namespace kraken {
                 createdFull.updateTimestamp = createdMin.updateTimestamp;
                 
                 db.insertReplace(createdFull);
+                
                 _logger->log(loggerTypeInfo, "Done. Next: %s", DBOrder::description(createdFull).str().c_str());
+                if (_telegramBot) {
+                    auto message = std::make_unique<TelegramMessage>();
+                    message->onCreated(createdFull).addABIRate(data.abi, indexRate).addDetails(createdFull);
+                    messages.emplace_back(std::move(message));
+                }
                 
                 data.orders.emplace_back(std::move(createdFull));
             } catch (...) {
                 _unsyncOrders = true;
                 throw;
+            }
+        }
+        if (messages.size()) {
+            for (auto & message : messages) {
+                _telegramBot->send(*message);
             }
         }
     }
@@ -321,7 +339,7 @@ namespace kraken {
     
     void App::updateOrdersInfos() {
         auto apiOpen = _api->fetchOpenOrders();
-        DBOrders updated;
+        DBOrders updatedFrom, updatedTo;
         for (auto & apiOrder : apiOpen) {
             auto it = _datas.find(apiOrder.pair);
             if (it == _datas.end()) {
@@ -330,23 +348,31 @@ namespace kraken {
             auto * dbOrderPtr = findOrder(it->second.orders, apiOrder.clOrTxId());
             if (dbOrderPtr) {
                 if ((apiOrder.volume != dbOrderPtr->volume) || (apiOrder.cost != dbOrderPtr->cost) || (apiOrder.fee != dbOrderPtr->fee) || (apiOrder.price != dbOrderPtr->price)) {
-                    _logger->reopen();
-                    ScopeGuard lock([this] {
-                        _logger->close(false);
-                    });
-                    _logger->log(loggerTypeWarning, nullptr);
-                    _logger->log(loggerTypeWarning, "Order updated from: %s", DBOrder::description(*dbOrderPtr).str().c_str());
+                    updatedFrom.emplace_back(DBOrder::copy(*dbOrderPtr));
                     *dbOrderPtr = std::move(apiOrder);
                     dbOrderPtr->updateTimestamp = ::time(nullptr);
-                    _logger->log(loggerTypeWarning, "Order updated   to: %s", DBOrder::description(*dbOrderPtr).str().c_str());
-                    updated.emplace_back(DBOrder::copy(*dbOrderPtr));
+                    updatedTo.emplace_back(DBOrder::copy(*dbOrderPtr));
                 }
             } else {
                 _nextCOTime = -1;
             }
         }
-        if (updated.size()) {
-            OrdersDB(_ordersBDPath.c_str()).insertReplace(updated);
+        if (updatedTo.size()) {
+            OrdersDB(_ordersBDPath.c_str()).insertReplace(updatedTo);
+            _logger->reopen();
+            ScopeGuard lock([this] {
+                _logger->close(false);
+            });
+            for (size_t i = 0, n = updatedTo.size(); i < n; i++) {
+                _logger->log(loggerTypeWarning, nullptr);
+                _logger->log(loggerTypeWarning, "Order updated from: %s", DBOrder::description(updatedFrom[i]).str().c_str());
+                _logger->log(loggerTypeWarning, "Order updated   to: %s", DBOrder::description(updatedTo[i]).str().c_str());
+                if (_telegramBot) {
+                    TelegramMessage message;
+                    message.onUpdated(updatedFrom[i], updatedTo[i]);
+                    _telegramBot->send(message);
+                }
+            }
         }
     }
     

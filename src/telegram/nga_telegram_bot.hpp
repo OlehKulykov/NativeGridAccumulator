@@ -36,7 +36,7 @@ namespace telegram {
         static String combineMessageBlocks(const std::vector<String> & blocks);
         
     public:
-        void send(MessageBase && message) const;
+        void send(const MessageBase & message) const;
         
         Bot(String && apiKey, String && chatId,
             const std::shared_ptr<ReusableMT<DataVector> > & reusable = nullptr) noexcept;
