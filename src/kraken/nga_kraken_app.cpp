@@ -253,6 +253,7 @@ namespace kraken {
                 throw;
             }
         }
+        
         if (messages.size()) {
             for (auto & message : messages) {
                 _telegramBot->send(*message);
@@ -311,6 +312,7 @@ namespace kraken {
                 }
             }
         }
+        
         if (closed.size()) {
             createInversed(closed);
         }
@@ -357,6 +359,7 @@ namespace kraken {
                 _nextCOTime = -1;
             }
         }
+        
         if (updatedTo.size()) {
             OrdersDB(_ordersBDPath.c_str()).insertReplace(updatedTo);
             _logger->reopen();
