@@ -226,10 +226,10 @@ message("cURL libraries: ${CURL_LIBRARIES}")
 include(FindSQLite3)
 find_package(SQLite3)
 if (NOT SQLite3_FOUND)
-  message("-- Fetching SQLite amalgamation 3.53.1")
+  message("-- Fetching SQLite amalgamation 3.54.0")
   FetchContent_Declare(sqlite
-    URL      https://sqlite.org/2026/sqlite-autoconf-3530100.tar.gz
-    URL_HASH SHA3_256=36ca143645cf76997d07b66e9244c636b8ccdec64a1d50558259c4e415e6558b # Release: amalgamation version 3.53.1
+    URL      https://sqlite.org/2026/sqlite-autoconf-3540000.tar.gz
+    URL_HASH SHA3_256=f5e3e724e9c9b3b5d512c76b02082091a59eeea9becd169a9fbf4d376403acce # Release: amalgamation version 3.54.0
   )
   FetchContent_MakeAvailable(sqlite)
   
@@ -254,7 +254,7 @@ if (NOT SQLite3_FOUND)
   set(SQLite3_FOUND TRUE) # TRUE from original CMake's module FindSQLite3.cmake
   set(SQLite3_INCLUDE_DIR  ${sqlite_INCLUDE_DIR})
   set(SQLite3_INCLUDE_DIRS ${sqlite_INCLUDE_DIR})
-  set(SQLite3_VERSION "3.51.1")
+  set(SQLite3_VERSION "3.54.0")
   if (NOT TARGET SQLite::SQLite3)
     add_library(SQLite::SQLite3 ALIAS sqlite_amalgamation)
   endif()
