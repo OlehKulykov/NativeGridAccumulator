@@ -17,15 +17,19 @@
 #include <atomic>
 #include <map>
 
-#include "../core/nga_demand_logger.hpp"
+#include "../core/nga_logger.hpp"
 #include "nga_kraken_config.hpp"
 #include "nga_kraken_db_order.hpp"
 #include "nga_kraken_order_settings_base.hpp"
 #include "nga_kraken_icalc.hpp"
 #include "nga_kraken_api.hpp"
+#include "../telegram/nga_telegram_config.hpp"
+#include "../telegram/nga_telegram_bot.hpp"
 
 namespace nga {
 namespace kraken {
+    
+    typedef std::pair<Config, telegram::Config> AppConfigs;
     
     class NGA_CPP_CLASS_API App final {
     private:
@@ -50,13 +54,14 @@ namespace kraken {
         std::mutex _mutex;
         std::thread _thread;
         std::condition_variable _condition;
-        std::shared_ptr<DemandLogger> _logger;
+        std::shared_ptr<Logger> _logger;
         std::shared_ptr<ReusableMT<DataVector> > _reusable;
         std::map<String, PairData> _datas;
         String _ordersBDPath;
         std::mutex _syncMutex;
         std::unique_ptr<API> _api;
-        std::unique_ptr<Config> _config;
+        std::unique_ptr<telegram::Bot> _telegramBot;
+        std::unique_ptr<AppConfigs> _configs;
         std::atomic<bool> _working{false};
         std::atomic<bool> _busy{true};
         std::atomic<bool> _unsyncConfig{true};
@@ -79,12 +84,12 @@ namespace kraken {
         
         void checkOrders();
         void updateOrdersInfos();
-        void syncConfig();
+        void syncConfigs();
         void syncOrders();
         void updateABI(PairData &, const String &);
         void updateABI();
         
-        void sync(Config &&);
+        void sync(AppConfigs &&);
         void work(int64_t currTime);
         void workerMethod();
         void stopWorking() noexcept;
@@ -96,9 +101,9 @@ namespace kraken {
         
     public:
         void tick() noexcept;
-        void init(Config &&, const std::shared_ptr<DemandLogger> &);
+        void init(AppConfigs &&, const std::shared_ptr<Logger> &);
         
-        void onChanged(Config &&) noexcept;
+        void onChanged(AppConfigs &&);
         void onExit() noexcept;
         
         App() noexcept;

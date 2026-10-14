@@ -32,7 +32,7 @@ typedef std::pair<off_t, time_t> FSStat;
 
 struct App final {
     std::unique_ptr<nga::kraken::App> krakenApp;
-    std::shared_ptr<nga::DemandLogger> logger;
+    std::shared_ptr<nga::Logger> logger;
     const char * configPath;
     uv_fs_event_t configEvent;
     FSStat configStat;
@@ -78,7 +78,7 @@ static FSStat pathFSStat(const char * path) noexcept {
 static void onExit(uv_signal_t * handle, int signum) noexcept {
     auto * loop = ::uv_default_loop();
     auto & app = *static_cast<::App *>(loop->data);
-    app.logger->log(nga::loggerTypeInfo, "Received exit signal %i. Exiting...", signum);
+    app.logger->reopen().log(nga::loggerTypeInfo, "Received exit signal %i. Exiting...", signum);
     app.krakenApp->onExit();
     ::uv_stop(loop);
 }
@@ -104,15 +104,19 @@ static void onConfigChanged(uv_fs_event_t * handle, const char * filename, int e
     }
     
     if (changed) {
-        app.logger->log(nga::loggerTypeInfo, "Config changed, reloading");
+        app.logger->reopen().log(nga::loggerTypeInfo, "Config changed, reloading");
         try {
             nga::Config config;
             config.load(app.configPath);
             
-            app.krakenApp->onChanged(std::move(config.krakenConfig()));
+            nga::kraken::AppConfigs appConfigs;
+            appConfigs.first = std::move(config.krakenConfig());
+            appConfigs.second = std::move(config.telegramConfig());
+            app.krakenApp->onChanged(std::move(appConfigs));
         } catch (...) {
             app.logger->log(std::current_exception());
         }
+        app.logger->close(false);
     }
 }
 
@@ -129,18 +133,21 @@ int main(int argc, const char * argv[]) {
         nga::Config config;
         config.load(app.configPath);
         
-        auto logger = std::make_shared<nga::DemandLogger>();
+        const auto logger = std::make_shared<nga::Logger>();
         logger->open(config.logFilePath().c_str());
         nga::file::stdioToDevNull();
         
         logger->log(nullptr, emptyCString);
         logger->log(nullptr, "Start[%" PRIi64 "]: %s, %s", static_cast<int64_t>(::getpid()), nga_version_string(), nga_build_string());
-        app.logger = std::move(logger);
+        app.logger = logger;
         
         auto krakenApp = std::make_unique<nga::kraken::App>();
-        krakenApp->init(std::move(config.krakenConfig()), app.logger);
+        nga::kraken::AppConfigs appConfigs;
+        appConfigs.first = std::move(config.krakenConfig());
+        appConfigs.second = std::move(config.telegramConfig());
+        krakenApp->init(std::move(appConfigs), app.logger);
         app.krakenApp = std::move(krakenApp);
-        
+        logger->close(false);
     } catch (const std::exception & exception) {
         if (app.logger) {
             app.logger->log(nga::loggerTypeCritical, "Init app, what: %s", (exception.what() ?: emptyCString));

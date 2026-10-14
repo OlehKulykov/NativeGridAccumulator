@@ -101,37 +101,17 @@ namespace telegram {
         sendMessageJSON(json);
     }
     
-    void Bot::log(std::exception_ptr e) const {
-        if (_logger) {
-            _logger->log(e);
-        }
-    }
-    
     void Bot::send(MessageBase && message) const {
-        if (message.empty()) {
-            return;
+        if (!message.empty()) {
+            sendMessageText(combineMessageBlocks(message._blocks));
+            message._blocks.clear();
         }
-        
-        _dispatchQueue->add([self = weak_from_this(), blocks = std::move(message._blocks)] () mutable {
-            auto strongSelf = self.lock();
-            if (strongSelf) {
-                try {
-                    strongSelf->sendMessageText(combineMessageBlocks(blocks));
-                } catch (...) {
-                    strongSelf->log(std::current_exception()); 
-                }
-            }
-        });
     }
     
     Bot::Bot(String && apiKey, String && chatId,
-             const std::shared_ptr<DispatchQueue> & dispatchQueue,
-             const std::shared_ptr<Logger> & logger,
-             const std::shared_ptr<ReusableMT<DataVector> > & reusable) noexcept : std::enable_shared_from_this<Bot>(),
+             const std::shared_ptr<ReusableMT<DataVector> > & reusable) noexcept :
         _aKey(std::move(apiKey)),
         _chatId(std::move(chatId)),
-        _dispatchQueue(dispatchQueue),
-        _logger(logger),
         _reusable(reusable) {
         
     }

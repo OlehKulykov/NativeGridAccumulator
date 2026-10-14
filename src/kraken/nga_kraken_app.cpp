@@ -18,6 +18,7 @@
 #include "nga_kraken_calc.hpp"
 #include "nga_kraken_decimal_utils.hpp"
 #include "../core/nga_randomizer.hpp"
+#include "../core/nga_scope_guard.hpp"
 
 #include "nga_kraken_app.hpp"
 
@@ -192,6 +193,10 @@ namespace kraken {
     }
     
     void App::createInversed(const std::vector<DBOrderParent> & closedPairs) {
+        _logger->reopen();
+        ScopeGuard lock([this] {
+            _logger->close(false);
+        });
         OrdersDB db;
         db.open(_ordersBDPath.c_str());
         for (const auto & pair : closedPairs) {
@@ -276,8 +281,9 @@ namespace kraken {
                         if (it != _datas.end()) {
                             const auto removedOrderDescr = DBOrder::description(dbOrder).str();
                             removeOrder(it->second.orders, dbOrder.clOrTxId());
-                            _logger->log(loggerTypeInfo, nullptr);
+                            _logger->reopen().log(loggerTypeInfo, nullptr);
                             _logger->log(loggerTypeInfo, "Removed canceled | expired order: %s", removedOrderDescr.c_str());
+                            _logger->close(false);
                         }
                     } break;
                         
@@ -324,6 +330,10 @@ namespace kraken {
             auto * dbOrderPtr = findOrder(it->second.orders, apiOrder.clOrTxId());
             if (dbOrderPtr) {
                 if ((apiOrder.volume != dbOrderPtr->volume) || (apiOrder.cost != dbOrderPtr->cost) || (apiOrder.fee != dbOrderPtr->fee) || (apiOrder.price != dbOrderPtr->price)) {
+                    _logger->reopen();
+                    ScopeGuard lock([this] {
+                        _logger->close(false);
+                    });
                     _logger->log(loggerTypeWarning, nullptr);
                     _logger->log(loggerTypeWarning, "Order updated from: %s", DBOrder::description(*dbOrderPtr).str().c_str());
                     *dbOrderPtr = std::move(apiOrder);
@@ -359,6 +369,10 @@ namespace kraken {
     }
     
     void App::syncOrders() {
+        _logger->reopen();
+        ScopeGuard lock([this] {
+            _logger->close(false);
+        });
         _logger->log(loggerTypeInfo, "Sync orders...");
         time_t earliestOpenTimestamp;
         OrdersDB db;
@@ -434,18 +448,18 @@ namespace kraken {
         _logger->log(loggerTypeInfo, "Sync orders done.");
     }
     
-    void App::syncConfig() {
+    void App::syncConfigs() {
         const std::lock_guard<std::mutex> lock(_syncMutex);
-        auto config = std::move(_config);
-        if (config) {
-            sync(std::move(*config.get()));
+        auto configs = std::move(_configs);
+        if (configs) {
+            sync(std::move(*configs.get()));
         }
     }
     
     void App::work(int64_t currTime) {
         if (_unsyncConfig) {
             _busy = true;
-            syncConfig();
+            syncConfigs();
             _unsyncConfig = false;
             currTime = currentTimeMilli();
         }
@@ -489,7 +503,8 @@ namespace kraken {
                 try {
                     work(currentTimeMilli());
                 } catch (...) {
-                    _logger->log(std::current_exception());
+                    _logger->reopen().log(std::current_exception());
+                    _logger->close(false);
                     _unsyncConfig = true;
                     _unsyncOrders = true;
                     _nextABITime = _nextUOITime = _nextCOTime = -1;
@@ -513,16 +528,23 @@ namespace kraken {
         }
     }
     
-    void App::sync(Config && config) {
+    void App::sync(AppConfigs && configs) {
+        _logger->reopen();
+        ScopeGuard lock([this] {
+            _logger->close(false);
+        });
         _logger->log(loggerTypeInfo, "Sync with config...");
         _api.reset();
+        _telegramBot.reset();
         _ordersBDPath.clear();
         
-        if (config.apiKey.size() && config.privateKey.size()) {
-            if (!_reusable) {
-                _reusable = std::make_shared<ReusableMT<DataVector> >();
-            }
-            _api = std::make_unique<API>(std::move(config.apiKey), std::move(config.privateKey), _reusable);
+        if (!_reusable) {
+            _reusable = std::make_shared<ReusableMT<DataVector> >();
+        }
+        
+        auto & krakenConfig = configs.first;
+        if (krakenConfig.apiKey.size() && krakenConfig.privateKey.size()) {
+            _api = std::make_unique<API>(std::move(krakenConfig.apiKey), std::move(krakenConfig.privateKey), _reusable);
         }
         if (!_api) {
             throw std::logic_error("App: failed to initialize required Kraken API");
@@ -530,16 +552,21 @@ namespace kraken {
         
         {
             OrdersDB db;
-            db.open(config.ordersBD.c_str(), true);
-            _ordersBDPath = config.ordersBD.c_str();
+            db.open(krakenConfig.ordersBD.c_str(), true);
+            _ordersBDPath = krakenConfig.ordersBD.c_str();
         }
         
-        _checkOrdersTicks = config.checkOrdersTicks;
-        _updateAskBidTicks = config.updateAskBidTicks;
-        _updateOrdersInfoTicks = config.updateOrdersInfoTicks;
+        _checkOrdersTicks = krakenConfig.checkOrdersTicks;
+        _updateAskBidTicks = krakenConfig.updateAskBidTicks;
+        _updateOrdersInfoTicks = krakenConfig.updateOrdersInfoTicks;
         
-        sync(_datas, config.orderSettings);
+        sync(_datas, krakenConfig.orderSettings);
         _logger->log(loggerTypeInfo, "Sync with config done.");
+        
+        auto & telegramConfig = configs.second;
+        if (telegramConfig.apiKey.size() && telegramConfig.chatId.size()) {
+            _telegramBot = std::make_unique<telegram::Bot>(std::move(telegramConfig.apiKey), std::move(telegramConfig.chatId), _reusable);
+        }
     }
     
     void App::tick() noexcept {
@@ -551,7 +578,7 @@ namespace kraken {
         }
     }
     
-    void App::init(Config && config, const std::shared_ptr<DemandLogger> & logger) {
+    void App::init(AppConfigs && configs, const std::shared_ptr<Logger> & logger) {
         if (_working) {
             throw std::logic_error("App: already initialized");
         }
@@ -563,8 +590,8 @@ namespace kraken {
         
         {   // force/inline config synchronization
             const std::lock_guard<std::mutex> lock(_syncMutex);
-            _config.reset();
-            sync(std::move(config));
+            _configs.reset();
+            sync(std::move(configs));
             _unsyncConfig = false;
         }
         
@@ -573,14 +600,10 @@ namespace kraken {
         _busy = false;
     }
     
-    void App::onChanged(Config && config) noexcept {
-        try {
-            const std::lock_guard<std::mutex> lock(_syncMutex);
-            _config = std::make_unique<Config>(std::move(config));
-            _unsyncConfig = true;
-        } catch (...) {
-            _logger->log(std::current_exception());
-        }
+    void App::onChanged(AppConfigs && configs) {
+        const std::lock_guard<std::mutex> lock(_syncMutex);
+        _configs = std::make_unique<AppConfigs>(std::move(configs));
+        _unsyncConfig = true;
     }
     
     void App::onExit() noexcept {
