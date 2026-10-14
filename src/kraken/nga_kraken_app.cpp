@@ -590,12 +590,13 @@ namespace kraken {
         _updateOrdersInfoTicks = krakenConfig.updateOrdersInfoTicks;
         
         sync(_datas, krakenConfig.orderSettings);
-        _logger->log(loggerTypeInfo, "Sync with config done.");
         
         auto & telegramConfig = configs.second;
         if (telegramConfig.apiKey.size() && telegramConfig.chatId.size()) {
             _telegramBot = std::make_unique<telegram::Bot>(std::move(telegramConfig.apiKey), std::move(telegramConfig.chatId), _reusable);
         }
+        
+        _logger->log(loggerTypeInfo, "Sync with config done.");
     }
     
     void App::tick() noexcept {
