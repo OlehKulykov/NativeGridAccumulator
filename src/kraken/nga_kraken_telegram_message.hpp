@@ -24,18 +24,16 @@ namespace kraken {
         static String profitString(const OrderProfit & profit, const String & pair);
         
     public:
-        void onClosed(const DBOrder & order);
-        void addClosedProfit(const OrderProfit & profit, const String & pair);
+        TelegramMessage & onClosed(const DBOrder & order);
+        TelegramMessage & addClosedProfit(const OrderProfit & profit, const String & pair);
         
-        void onCreated(const DBOrder & order);
-        void addExpectedProfit(const OrderProfit & profit, const String & pair);
-        void addABIRate(const Trio<Decimal, Decimal, Decimal> abi, const Decimal rate);
-        void addDetails(const DBOrder & order);
+        TelegramMessage & onCreated(const DBOrder & order);
+        TelegramMessage & addABIRate(const Trio<Decimal, Decimal, Decimal> abi, const Decimal rate);
+        TelegramMessage & addDetails(const DBOrder & order);
         
-        void onUpdated(const DBOrder & before, const DBOrder & after);
-        void addUpdatedExpectedProfits(const OrderProfit & before, const OrderProfit & after, const String & pair);
+        TelegramMessage & onUpdated(const DBOrder & before, const DBOrder & after);
         
-        void addSeparator();
+        TelegramMessage & addSeparator();
         
         TelegramMessage() noexcept = default;
         virtual ~TelegramMessage() noexcept = default;

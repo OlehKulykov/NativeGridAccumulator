@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.31)
 # https://semver.org
 set(CLIENT_VERSION_MAJOR 1)
 set(CLIENT_VERSION_MINOR 15)
-set(CLIENT_VERSION_PATCH 2)
+set(CLIENT_VERSION_PATCH 5)
 set(CLIENT_VENDOR "olehkulykov@gmail.com")
 set(COPYRIGHT_YEAR 2026)
 set(COPYRIGHT_HOLDERS "Oleh Kulykov")
@@ -265,7 +265,7 @@ set(BOOST_INCLUDE_LIBRARIES decimal)
 set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(boost_decimal
   GIT_REPOSITORY https://github.com/boostorg/decimal.git
-  GIT_TAG        59d79cbe1edde0428606187cdca1477315a55f37 # Release:  boost-1.91.0
+  GIT_TAG        58c7cca6b0a7d80884428315d80de3ac7254d396 # Release:  boost-1.92.0
   SYSTEM
   OVERRIDE_FIND_PACKAGE
 )
@@ -275,7 +275,7 @@ set(Boost_USE_MULTITHREADED ON CACHE BOOL "")
 set(BOOST_ENABLE_PYTHON OFF CACHE BOOL "")
 message("-- Found Boost include: ${BOOST_INCLUDE_LIBRARIES}")
 FetchContent_MakeAvailable(boost_decimal)
-find_package(boost_decimal 1.91.0 EXACT REQUIRED)
+find_package(boost_decimal 1.92.0 EXACT REQUIRED)
 
 # RapidJSON
 FetchContent_Declare(RapidJSON
@@ -364,7 +364,6 @@ set(NGA_CORE_HEADERS
   src/core/nga_c_string.h
   src/core/nga_crypto.hpp
   src/core/nga_curl_request.hpp
-  src/core/nga_demand_logger.hpp
   src/core/nga_dispatch_queue.hpp
   src/core/nga_file_utils.hpp
   src/core/nga_fixed_string_stream.hpp
@@ -393,7 +392,6 @@ set(NGA_CORE_SOURCES
   src/core/nga_c_string.c
   src/core/nga_crypto.cpp
   src/core/nga_curl_request.cpp
-  src/core/nga_demand_logger.cpp
   src/core/nga_dispatch_queue.cpp
   src/core/nga_file_utils.cpp
   src/core/nga_http.cpp
@@ -475,8 +473,6 @@ source_group("core"
   src/core/nga_crypto.hpp
   src/core/nga_curl_request.cpp
   src/core/nga_curl_request.hpp
-  src/core/nga_demand_logger.cpp
-  src/core/nga_demand_logger.hpp
   src/core/nga_dispatch_queue.cpp
   src/core/nga_dispatch_queue.hpp
   src/core/nga_file_utils.cpp

@@ -15,7 +15,6 @@
 
 #include "nga_logger.hpp"
 #include "nga_fixed_string_stream.hpp"
-#include "nga_noexcept_unique_lock.hpp"
 
 #include "nga_c_string.h"
 
@@ -32,10 +31,10 @@ namespace nga {
     const char * NGA_NONNULL const loggerTypeWarning   = "WARN";
     const char * NGA_NONNULL const loggerTypeDebug     = "DBG";
     
-    void Logger::log(std::exception_ptr exception) const noexcept {
+    void Logger::log(std::exception_ptr exceptionPtr) const noexcept {
         try {
-            if (exception) {
-                std::rethrow_exception(exception);
+            if (exceptionPtr) {
+                std::rethrow_exception(exceptionPtr);
             }
         } catch (const std::exception & exception) {
             log(loggerTypeException, exception.what());
@@ -43,12 +42,16 @@ namespace nga {
     }
     
     void Logger::log(const std::exception & exception) const noexcept {
-        log(loggerTypeException, exception.what());
+        try {
+            log(loggerTypeException, exception.what());
+        } catch (...) {
+            Logger::systemLog(loggerTypeException, "Error log exception, errno: %i (%s), %s", errno, ::strerror(errno), (exception.what() ?: emptyCString));
+        }
     }
     
-    void Logger::log(const char * NGA_NULLABLE type, const char * NGA_NULLABLE format, ...) const noexcept {
+    void Logger::log(const char * NGA_NULLABLE type, const char * NGA_NULLABLE format, ...) const {
         const auto now = std::chrono::system_clock::now();
-        NoExceptUniqueLock<std::mutex> lock(_mutex);
+        const std::lock_guard<std::mutex> lock(_mutex);
         if (_fd >= 0) {
             FixedStringStream<63, false> stream; // 64 == bufferCapacity()
             stream << '[';
@@ -79,21 +82,7 @@ namespace nga {
         }
     }
     
-    void Logger::open(const int fd) {
-        const std::lock_guard<std::mutex> lock(_mutex);
-        _close();
-        if ((fd >= 0) && (::lseek(fd, 0, SEEK_END) >= 0)) {
-            _fd = fd;
-        } else {
-            if (fd >= 0) {
-                ::close(fd);
-            }
-            throw std::invalid_argument(std::format("Logger: invalid file descriptor: {}", fd));
-        }
-    }
-    
-    void Logger::open(const char * NGA_NONNULL path) {
-        const std::lock_guard<std::mutex> lock(_mutex);
+    void Logger::_open(const char * NGA_NONNULL path) {
         _close();
         if (!path) {
             throw std::invalid_argument("Logger: path is null");
@@ -117,9 +106,31 @@ namespace nga {
         }
     }
     
-    void Logger::close() noexcept {
-        NoExceptUniqueLock<std::mutex> lock(_mutex);
-        _close();
+    Logger & Logger::open(const char * NGA_NONNULL path) {
+        const std::lock_guard<std::mutex> lock(_mutex);
+        _open(path);
+        _path = path;
+        _openCounter = 1;
+        return *this;
+    }
+    
+    Logger & Logger::reopen() {
+        const std::lock_guard<std::mutex> lock(_mutex);
+        if (_path.empty()) {
+            throw std::logic_error("Logger: path is null, open first");
+        }
+        if (++_openCounter == 1) {
+            _open(_path.c_str());
+        }
+        return *this;
+    }
+    
+    void Logger::close(const bool force) {
+        const std::lock_guard<std::mutex> lock(_mutex);
+        if (force || (--_openCounter < 1)) {
+            _close();
+            _openCounter = 0;
+        }
     }
     
     Logger::~Logger() noexcept {

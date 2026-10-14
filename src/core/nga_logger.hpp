@@ -27,11 +27,14 @@ namespace nga {
     NGA_CPP_API_PRIVATE(const char * NGA_NONNULL const) loggerTypeWarning;
     NGA_CPP_API_PRIVATE(const char * NGA_NONNULL const) loggerTypeDebug;
     
-    class NGA_CPP_CLASS_API Logger {
+    class NGA_CPP_CLASS_API Logger final {
     protected:
         mutable std::mutex _mutex;
-        int _fd = -1;
+        std::filesystem::path _path;
+        int _openCounter{0};
+        int _fd{-1};
         
+        void _open(const char * NGA_NONNULL path);
         void _close() noexcept;
         
         static void systemLog(const int option,
@@ -40,17 +43,17 @@ namespace nga {
                               va_list vaList) noexcept;
         
     public:
-        void log(const char * NGA_NULLABLE type, const char * NGA_NULLABLE format, ...) const noexcept;
+        void log(const char * NGA_NULLABLE type, const char * NGA_NULLABLE format, ...) const;
         void log(const std::exception & exception) const noexcept;
-        void log(std::exception_ptr exception) const noexcept;
+        void log(std::exception_ptr exceptionPtr) const noexcept;
         
-        virtual void open(const int fd);
-        virtual void open(const char * NGA_NONNULL path);
+        Logger & open(const char * NGA_NONNULL path);
+        Logger & reopen();
         
-        virtual void close() noexcept;
+        void close(const bool force = true);
         
         Logger() noexcept = default;
-        virtual ~Logger() noexcept;
+        ~Logger() noexcept;
         
         static void systemLog(const char * NGA_NULLABLE type, const char * NGA_NONNULL format, ...) noexcept;
     };

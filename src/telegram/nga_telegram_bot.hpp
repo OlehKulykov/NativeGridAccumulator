@@ -24,27 +24,21 @@
 namespace nga {
 namespace telegram {
     
-    class NGA_CPP_CLASS_API Bot final : public std::enable_shared_from_this<Bot>, protected CURLRequest {
+    class NGA_CPP_CLASS_API Bot final : protected CURLRequest {
     private:
-        std::shared_ptr<DispatchQueue> _dispatchQueue;
         std::shared_ptr<ReusableMT<DataVector> > _reusable;
-        std::shared_ptr<Logger> _logger;
         String _aKey;
         String _chatId;
         
         void sendMessageJSON(const String & json) const;
         void sendMessageText(String && text) const;
         
-        void log(std::exception_ptr) const;
-        
         static String combineMessageBlocks(const std::vector<String> & blocks);
         
     public:
-        void send(MessageBase && message) const;
+        void send(const MessageBase & message) const;
         
         Bot(String && apiKey, String && chatId,
-            const std::shared_ptr<DispatchQueue> & dispatchQueue,
-            const std::shared_ptr<Logger> & logger,
             const std::shared_ptr<ReusableMT<DataVector> > & reusable = nullptr) noexcept;
     };
     
